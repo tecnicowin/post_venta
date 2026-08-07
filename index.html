@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Punto de Venta</title>
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+</head>
+<body>
+  <div class="app-layout">
+    <div class="sidebar-backdrop"></div>
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">PdV</div>
+        <div class="brand">Punto de Venta<small>Sistema de Facturación</small></div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">Principal</div>
+        <a class="nav-item active" data-page="dashboard" href="#"><span class="icon">📊</span> Dashboard</a>
+        <a class="nav-item" data-page="invoice" href="#"><span class="icon">📄</span> Facturación</a>
+        <div class="nav-section">Gestión</div>
+        <a class="nav-item" data-page="inventory" href="#"><span class="icon">📦</span> Inventario</a>
+        <a class="nav-item" data-page="purchases" href="#"><span class="icon">🛒</span> Compras</a>
+        <a class="nav-item" data-page="cashregister" href="#"><span class="icon">💰</span> Caja</a>
+        <a class="nav-item" data-page="services" href="#"><span class="icon">🔧</span> Servicios</a>
+        <div class="nav-section">Sistema</div>
+        <a class="nav-item" data-page="reports" href="#"><span class="icon">📈</span> Reportes</a>
+        <a class="nav-item" data-page="config" href="#"><span class="icon">⚙️</span> Configuración</a>
+      </nav>
+      <div class="sidebar-footer"><div>Punto de Venta v1.0</div></div>
+    </aside>
+    <main class="main-content">
+      <header class="header">
+        <div class="header-left">
+          <button class="menu-toggle">☰</button>
+          <h1 class="header-title">Dashboard</h1>
+        </div>
+        <div class="header-right">
+          <span id="headerClock" class="header-badge"></span>
+          <div class="header-badge cash-status"><span class="icon">●</span><span>Caja Cerrada</span></div>
+        </div>
+      </header>
+      <div class="page-content">
+        <section id="page-dashboard" class="page-section"></section>
+        <section id="page-inventory" class="page-section hidden">
+          <div class="flex items-center justify-between mb-4">
+            <h2>Inventario</h2>
+            <div class="flex gap-2 items-center">
+              <div class="search-box"><span class="icon">🔍</span><input type="text" class="form-control" placeholder="Buscar..." id="inventorySearch" oninput="Inventory.filter(this.value)"></div>
+              <select class="form-control" id="categoryFilter" style="width:auto" onchange="Inventory.filterByCategory(this.value)"><option value="">Todas</option></select>
+              <button class="btn btn-primary" onclick="Categories.showForm()">+ Categoría</button>
+              <button class="btn btn-primary" onclick="Inventory.showForm()">+ Producto</button>
+            </div>
+          </div>
+          <div class="grid grid-4 mb-4" id="inventoryStats"></div>
+          <div id="categoriesList" class="mb-4"></div>
+          <div class="card"><div class="card-body"><div id="inventoryTable"></div></div></div>
+        </section>
+        <section id="page-invoice" class="page-section hidden"><div id="invoiceContent"></div></section>
+        <section id="page-purchases" class="page-section hidden">
+          <div class="flex items-center justify-between mb-4">
+            <h2>Carga de Inventario / Compras</h2>
+            <button class="btn btn-primary" onclick="Purchases.showForm()">+ Nueva Compra</button>
+          </div>
+          <div class="grid grid-4 mb-4" id="purchasesStats"></div>
+          <div class="card"><div class="card-body"><div id="purchasesTable"></div></div></div>
+        </section>
+        <section id="page-cashregister" class="page-section hidden">
+          <div class="flex items-center justify-between mb-4"><h2>Control de Caja</h2></div>
+          <div id="cashregisterContent"></div>
+        </section>
+        <section id="page-services" class="page-section hidden">
+          <div class="flex items-center justify-between mb-4">
+            <h2>Órdenes de Servicio</h2>
+            <button class="btn btn-primary" onclick="Services.showForm()">+ Nueva Orden</button>
+          </div>
+          <div class="grid grid-4 mb-4" id="servicesStats"></div>
+          <div class="card"><div class="card-body"><div id="servicesTable"></div></div></div>
+        </section>
+        <section id="page-reports" class="page-section hidden">
+          <div class="flex items-center justify-between mb-4"><h2>Reportes</h2></div>
+          <div id="reportsContent"></div>
+        </section>
+        <section id="page-config" class="page-section hidden">
+          <div class="flex items-center justify-between mb-4"><h2>Configuración</h2></div>
+          <div id="configForm"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <div class="toast-container"></div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/inventory.js"></script>
+  <script src="js/categories.js"></script>
+  <script src="js/cashregister.js"></script>
+  <script src="js/invoice.js"></script>
+  <script src="js/payment.js"></script>
+  <script src="js/purchases.js"></script>
+  <script src="js/services.js"></script>
+  <script src="js/pdf.js"></script>
+  <script src="js/whatsapp.js"></script>
+  <script src="js/reports.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+PuntodeVenta/
+├── index.html                 ← Archivo principal
+├── manifest.json              ← PWA manifest
+├── sw.js                      ← Service Worker (offline)
+├── css/
+│   ├── theme.css              ← Variables CSS
+│   ├── main.css               ← Estilos principales
+│   ├── components.css         ← Modales, cards, tablas
+│   └── responsive.css         ← Responsive design
+├── js/
+│   ├── utils.js               ← Utilidades (fechas, monedas, IDs)
+│   ├── storage.js             ← IndexedDB CRUD
+│   ├── ui.js                  ← Componentes UI reutilizables
+│   ├── app.js                 ← Inicialización y routing
+│   ├── config.js              ← Configuración del negocio
+│   ├── categories.js          ← CRUD categorías
+│   ├── inventory.js           ← Gestión de inventario
+│   ├── cashregister.js        ← Control de caja
+│   ├── invoice.js             ← Sistema de facturación
+│   ├── payment.js             ← 7 formas de pago
+│   ├── pdf.js                 ← Generación PDF (jsPDF)
+│   ├── whatsapp.js            ← Enviar por WhatsApp
+│   └── reports.js             ← Reportes diarios
+└── assets/icons/              ← Iconos PWA (pendiente)
