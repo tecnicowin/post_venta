@@ -717,29 +717,29 @@ const Services = {
     let y = 5;
     const ct = (t, yPos, o = {}) => { doc.setFontSize(o.fs || 7); doc.setFont('helvetica', o.fw || 'normal'); doc.text(t, formatWidth / 2, yPos, { align: 'center', maxWidth: formatWidth - 10 }); return yPos + (o.fs * 0.4); };
 
-    y = ct(config.nombreComercial || 'MI NEGOCIO', y, { fs: 10, fw: 'bold' });
-    y = ct(`RIF: ${config.rif || 'N/A'}`, y + 1, { fs: 6 }); y += 2;
+    y = ct(Utils.escapeHtml(config.nombreComercial || 'MI NEGOCIO'), y, { fs: 10, fw: 'bold' });
+    y = ct(`RIF: ${Utils.escapeHtml(config.rif || 'N/A')}`, y + 1, { fs: 6 }); y += 2;
     doc.line(5, y, formatWidth - 5, y); y += 3;
     y = ct(`ORDEN DE SERVICIO #${svc.numero}`, y, { fs: 8, fw: 'bold' }); y += 1;
     doc.setFontSize(6); doc.setFont('helvetica', 'normal');
     doc.text(`Fecha: ${Utils.formatDate(svc.createdAt)}`, 5, y); y += 3;
     const cn = svc.cliente ? (svc.cliente.nombreComercial || `${svc.cliente.nombre || ''} ${svc.cliente.apellido || ''}`) : 'Detal';
-    doc.text(`Cliente: ${cn}`, 5, y); y += 3;
+    doc.text(`Cliente: ${Utils.escapeHtml(cn)}`, 5, y); y += 3;
     doc.line(5, y, formatWidth - 5, y); y += 3;
     doc.setFontSize(7); doc.setFont('helvetica', 'bold');
-    doc.text(`EQUIPO: ${eq.tipo || 'PC'} ${eq.marca || ''} ${eq.modelo || ''}`, 5, y); y += 3;
+    doc.text(`EQUIPO: ${Utils.escapeHtml(eq.tipo || 'PC')} ${Utils.escapeHtml(eq.marca || '')} ${Utils.escapeHtml(eq.modelo || '')}`, 5, y); y += 3;
     doc.setFontSize(6); doc.setFont('helvetica', 'normal');
-    if (eq.ram) { doc.text(`RAM: ${eq.ram}`, 5, y); y += 3; }
-    if (eq.procesador) { doc.text(`CPU: ${eq.procesador}`, 5, y); y += 3; }
-    if (eq.discoDuro) { doc.text(`Disco: ${eq.discoDuro}`, 5, y); y += 3; }
+    if (eq.ram) { doc.text(`RAM: ${Utils.escapeHtml(eq.ram)}`, 5, y); y += 3; }
+    if (eq.procesador) { doc.text(`CPU: ${Utils.escapeHtml(eq.procesador)}`, 5, y); y += 3; }
+    if (eq.discoDuro) { doc.text(`Disco: ${Utils.escapeHtml(eq.discoDuro)}`, 5, y); y += 3; }
     doc.line(5, y, formatWidth - 5, y); y += 3;
     doc.setFontSize(7); doc.setFont('helvetica', 'bold');
-    doc.text(`SERVICIO: ${svc.descripcionServicio || ''}`, 5, y); y += 4;
+    doc.text(`SERVICIO: ${Utils.escapeHtml(svc.descripcionServicio || '')}`, 5, y); y += 4;
     if (svc.items && svc.items.length > 0) {
       doc.setFontSize(6); doc.setFont('helvetica', 'normal');
       svc.items.forEach(item => {
         if (y > 250) { doc.addPage(); y = 10; }
-        doc.text(`${item.descripcion.substring(0, 25)}`, 5, y);
+        doc.text(`${Utils.escapeHtml(item.descripcion.substring(0, 25))}`, 5, y);
         doc.text(`x${item.cantidad}`, formatWidth - 30, y);
         doc.text(Utils.formatCurrency(item.totalPorRubro), formatWidth - 5, y, { align: 'right' });
         y += 3;

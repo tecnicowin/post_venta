@@ -221,7 +221,7 @@ const PdfGenerator = {
     let itemsHtml = '';
     if (factura.items) {
       factura.items.forEach(item => {
-        itemsHtml += `<tr><td>${item.descripcion}</td><td class="right">${Utils.formatCurrency(item.totalPorRubro)}</td></tr>`;
+        itemsHtml += `<tr><td>${Utils.escapeHtml(item.descripcion)}</td><td class="right">${Utils.formatCurrency(item.totalPorRubro)}</td></tr>`;
       });
     }
 
@@ -264,17 +264,17 @@ const PdfGenerator = {
         </style>
       </head>
       <body>
-        <div class="center bold" style="font-size:16px">${config.nombreComercial || 'MI NEGOCIO'}</div>
-        <div class="center small">RIF: ${config.rif || 'N/A'}</div>
-        <div class="center small">Tel: ${config.telefono || ''}</div>
-        <div class="center small">${config.direccion || ''}</div>
+        <div class="center bold" style="font-size:16px">${Utils.escapeHtml(config.nombreComercial || 'MI NEGOCIO')}</div>
+        <div class="center small">RIF: ${Utils.escapeHtml(config.rif || 'N/A')}</div>
+        <div class="center small">Tel: ${Utils.escapeHtml(config.telefono || '')}</div>
+        <div class="center small">${Utils.escapeHtml(config.direccion || '')}</div>
         <div class="line"></div>
         <div class="center bold" style="font-size:14px">FACTURA</div>
         <div class="small">Nro: ${factura.numero}</div>
         <div class="small">Fecha: ${Utils.formatDateTime(factura.createdAt)}</div>
-        <div class="small">Cliente: ${clienteNombre}</div>
-        ${cliente.rif ? `<div class="small">RIF: ${cliente.rif}</div>` : ''}
-        ${cliente.cedula ? `<div class="small">C.I.: ${cliente.cedula}</div>` : ''}
+        <div class="small">Cliente: ${Utils.escapeHtml(clienteNombre)}</div>
+        ${cliente.rif ? `<div class="small">RIF: ${Utils.escapeHtml(cliente.rif)}</div>` : ''}
+        ${cliente.cedula ? `<div class="small">C.I.: ${Utils.escapeHtml(cliente.cedula)}</div>` : ''}
         <div class="line"></div>
         <table>${itemsHtml}</table>
         <div class="line"></div>
@@ -290,8 +290,8 @@ const PdfGenerator = {
         ${pagosHtml}
         <div class="line"></div>
         <div class="center small">¡Gracias por su compra!</div>
-        <div class="center small">${config.nombreComercial || ''}</div>
-        <div class="center small">RIF: ${config.rif || ''}</div>
+        <div class="center small">${Utils.escapeHtml(config.nombreComercial || '')}</div>
+        <div class="center small">RIF: ${Utils.escapeHtml(config.rif || '')}</div>
         <script>
           window.onload = function() {
             let count = 0;

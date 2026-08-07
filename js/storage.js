@@ -195,32 +195,67 @@ const Storage = {
   },
 
   async getNextInvoiceNumber() {
-    const current = await this.getConfig('secuenciaFactura') || 0;
-    const next = current + 1;
-    await this.setConfig('secuenciaFactura', next);
-    return String(next).padStart(6, '0');
+    return new Promise((resolve, reject) => {
+      const tx = this.db.transaction(STORES.config, 'readwrite');
+      const store = tx.objectStore(STORES.config);
+      const request = store.get('secuenciaFactura');
+      request.onsuccess = () => {
+        const current = request.result ? request.result.value : 0;
+        const next = current + 1;
+        store.put({ key: 'secuenciaFactura', value: next });
+        tx.oncomplete = () => resolve(String(next).padStart(6, '0'));
+      };
+      tx.onerror = (e) => reject(e.target.error);
+    });
   },
 
   async getNextServiceNumber() {
-    const current = await this.getConfig('secuenciaServicio') || 0;
-    const next = current + 1;
-    await this.setConfig('secuenciaServicio', next);
-    return String(next).padStart(6, '0');
+    return new Promise((resolve, reject) => {
+      const tx = this.db.transaction(STORES.config, 'readwrite');
+      const store = tx.objectStore(STORES.config);
+      const request = store.get('secuenciaServicio');
+      request.onsuccess = () => {
+        const current = request.result ? request.result.value : 0;
+        const next = current + 1;
+        store.put({ key: 'secuenciaServicio', value: next });
+        tx.oncomplete = () => resolve(String(next).padStart(6, '0'));
+      };
+      tx.onerror = (e) => reject(e.target.error);
+    });
   },
 
   async getFacturasByDate(date) {
-    const all = await this.getAll(STORES.facturas);
-    return all.filter(f => f.createdAt && f.createdAt.startsWith(date));
+    return new Promise((resolve, reject) => {
+      const tx = this.db.transaction(STORES.facturas, 'readonly');
+      const store = tx.objectStore(STORES.facturas);
+      const index = store.index('createdAt');
+      const range = IDBKeyRange.bound(date, date + '\uffff');
+      const request = index.getAll(range);
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = (e) => reject(e.target.error);
+    });
   },
 
   async getCajaByDate(date) {
-    const all = await this.getAll(STORES.caja);
-    return all.find(c => c.fecha === date);
+    return new Promise((resolve, reject) => {
+      const tx = this.db.transaction(STORES.caja, 'readonly');
+      const store = tx.objectStore(STORES.caja);
+      const index = store.index('fecha');
+      const request = index.get(date);
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = (e) => reject(e.target.error);
+    });
   },
 
   async getOpenCaja() {
-    const all = await this.getAll(STORES.caja);
-    return all.find(c => c.estado === 'abierta');
+    return new Promise((resolve, reject) => {
+      const tx = this.db.transaction(STORES.caja, 'readonly');
+      const store = tx.objectStore(STORES.caja);
+      const index = store.index('estado');
+      const request = index.get('abierta');
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = (e) => reject(e.target.error);
+    });
   },
 
   async exportAll() {

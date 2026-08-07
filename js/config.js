@@ -274,15 +274,15 @@ const Config = {
         </style>
       </head>
       <body>
-        <div class="center bold" style="font-size:16px">${config.nombreComercial || 'MI NEGOCIO'}</div>
-        <div class="center small">RIF: ${config.rif || 'N/A'}</div>
-        <div class="center small">Tel: ${config.telefono || ''}</div>
-        <div class="center small">${config.direccion || ''}</div>
+        <div class="center bold" style="font-size:16px">${Utils.escapeHtml(config.nombreComercial || 'MI NEGOCIO')}</div>
+        <div class="center small">RIF: ${Utils.escapeHtml(config.rif || 'N/A')}</div>
+        <div class="center small">Tel: ${Utils.escapeHtml(config.telefono || '')}</div>
+        <div class="center small">${Utils.escapeHtml(config.direccion || '')}</div>
         <div class="line"></div>
         <div class="center bold" style="font-size:14px">--- PRUEBA DE IMPRESIÓN ---</div>
         <div class="center small">${Utils.formatDateTime(Utils.getNow())}</div>
         <div class="line"></div>
-        <div class="center small">Impresora: ${config.printerName || 'Por configurar'}</div>
+        <div class="center small">Impresora: ${Utils.escapeHtml(config.printerName || 'Por configurar')}</div>
         <div class="center small">Papel: ${paperSize}</div>
         <div class="line"></div>
         <table>
@@ -294,7 +294,7 @@ const Config = {
         <div class="total">TOTAL: $44.25</div>
         <div class="line"></div>
         <div class="center small">¡Impresora funcionando!</div>
-        <div class="center small">${config.nombreComercial || ''}</div>
+        <div class="center small">${Utils.escapeHtml(config.nombreComercial || '')}</div>
         <script>window.onload = function() { window.print(); }<\/script>
       </body>
       </html>

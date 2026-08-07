@@ -157,8 +157,16 @@ const Invoice = {
     this.recalculate();
 
     if (status === 'pagada') {
+      const stockErrors = [];
       for (const item of this.currentInvoice.items) {
-        try { await Inventory.addExit(item.productoId, item.cantidad); } catch (e) {}
+        try {
+          await Inventory.addExit(item.productoId, item.cantidad);
+        } catch (e) {
+          stockErrors.push(`${item.descripcion}: ${e.message}`);
+        }
+      }
+      if (stockErrors.length > 0) {
+        UI.showToast(`Stock no actualizado: ${stockErrors.join('; ')}`, 'warning');
       }
     }
 
@@ -174,7 +182,6 @@ const Invoice = {
   },
 
   async renderFacturaPage() {
-    await this.load();
     await this.load();
     const container = document.getElementById('invoiceContent');
     if (!container) return;
