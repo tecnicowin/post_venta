@@ -57,7 +57,7 @@ const UI = {
 
   showModal(title, content, options = {}) {
     const existing = document.querySelector('.modal-overlay');
-    if (existing) existing.remove();
+    if (existing) existing.classList.add('modal-bg');
 
     const sizeClass = options.size ? `modal-${options.size}` : '';
     const footerHtml = options.footer !== false ? `
@@ -98,10 +98,14 @@ const UI = {
   },
 
   closeModal() {
-    const modal = document.querySelector('.modal-overlay');
+    const modal = document.querySelector('.modal-overlay:not(.modal-bg)');
     if (modal) {
       modal.classList.remove('active');
-      setTimeout(() => modal.remove(), 300);
+      setTimeout(() => {
+        modal.remove();
+        const bg = document.querySelector('.modal-bg');
+        if (bg) bg.classList.remove('modal-bg');
+      }, 300);
     }
   },
 

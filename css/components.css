@@ -16,6 +16,13 @@
   padding: 20px;
 }
 
+.modal-overlay.modal-bg {
+  z-index: 999;
+  opacity: 0.5;
+  visibility: visible;
+  pointer-events: none;
+}
+
 .modal-overlay.active {
   opacity: 1;
   visibility: visible;
