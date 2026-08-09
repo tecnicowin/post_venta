@@ -404,23 +404,6 @@ const Purchases = {
     if (el('proveedorTel')) el('proveedorTel').value = '';
   },
 
-  reopenAfterSupplier(prov) {
-    const items = this._editingItems ? [...this._editingItems] : [];
-    this._selectedSupplier = prov;
-    this.showForm();
-    setTimeout(() => {
-      this._editingItems = items;
-      this.renderDetailRows();
-      this.recalcAll();
-      const el = (id) => document.getElementById(id);
-      if (el('proveedorId')) el('proveedorId').value = prov.id;
-      if (el('proveedorDisplay')) el('proveedorDisplay').value = prov.nombre;
-      if (el('proveedorRif')) el('proveedorRif').value = prov.rif || '';
-      if (el('proveedorDir')) el('proveedorDir').value = prov.direccion || '';
-      if (el('proveedorTel')) el('proveedorTel').value = prov.telefono || '';
-    }, 200);
-  },
-
   _editingItems: [],
 
   addItemRow() {
@@ -598,6 +581,28 @@ const Purchases = {
     data.items = [...this._editingItems];
 
     try {
+      if (!data.proveedorId && data.proveedor && data.proveedor.trim()) {
+        const existente = Suppliers.items.find(p =>
+          p.activo && (
+            (data.proveedor && p.nombre && p.nombre.toLowerCase() === data.proveedor.toLowerCase()) ||
+            (data.rif && p.rif && p.rif.toLowerCase() === data.rif.toLowerCase())
+          )
+        );
+        if (existente) {
+          data.proveedorId = existente.id;
+          data.proveedor = existente.nombre;
+        } else {
+          const nuevoProv = await Suppliers.add({
+            nombre: data.proveedor.trim(),
+            rif: data.rif || '',
+            direccion: data.direccion || '',
+            telefono: data.telefono || ''
+          });
+          data.proveedorId = nuevoProv.id;
+          UI.showToast('Proveedor registrado automáticamente', 'success');
+        }
+      }
+
       if (editId) {
         await Storage.update(STORES.compras, { ...(await Storage.get(STORES.compras, editId)), ...data });
         UI.showToast('Compra actualizada', 'success');
