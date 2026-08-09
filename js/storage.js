@@ -93,8 +93,18 @@ const Storage = {
         }
       };
 
+      request.onblocked = () => {
+        console.warn('DB bloqueada. Cierra otras pestañas de la app.');
+        UI.showToast('Cierra otras pestañas de la app y recarga', 'warning');
+      };
+
       request.onsuccess = (e) => {
         this.db = e.target.result;
+        this.db.onversionchange = () => {
+          this.db.close();
+          UI.showToast('Actualización disponible. Recargando...', 'info');
+          setTimeout(() => location.reload(), 1000);
+        };
         resolve(this.db);
       };
 
@@ -309,5 +319,33 @@ const Storage = {
       (c.cedula && c.cedula.includes(q)) ||
       (c.rif && c.rif.toLowerCase().includes(q))
     );
+  },
+
+  async getStoreCount(storeName) {
+    return this.count(storeName);
+  },
+
+  async getDataSummary() {
+    const summary = {};
+    for (const [key, storeName] of Object.entries(STORES)) {
+      summary[key] = await this.count(storeName);
+    }
+    return summary;
+  },
+
+  checkBackupReminder() {
+    const lastBackup = localStorage.getItem('pdv_lastBackup');
+    const now = Date.now();
+    const daysSince = lastBackup ? (now - parseInt(lastBackup)) / (1000 * 60 * 60 * 24) : 999;
+
+    if (daysSince > 7) {
+      setTimeout(() => {
+        UI.showToast('⏰ Recuerda exportar tus datos (Configuración > Exportar)', 'info');
+      }, 5000);
+    }
+  },
+
+  markBackupDone() {
+    localStorage.setItem('pdv_lastBackup', Date.now().toString());
   }
 };

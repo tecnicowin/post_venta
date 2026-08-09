@@ -19,6 +19,8 @@ const App = {
       UI.navigate('dashboard');
       this.renderDashboard();
 
+      Storage.checkBackupReminder();
+
       console.log('Punto de Venta inicializado correctamente');
     } catch (error) {
       console.error('Error initializing app:', error);

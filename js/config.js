@@ -234,6 +234,7 @@ const Config = {
       a.download = `punto_venta_backup_${Utils.getToday()}.json`;
       a.click();
       URL.revokeObjectURL(url);
+      Storage.markBackupDone();
       UI.showToast('Datos exportados exitosamente', 'success');
     } catch (e) {
       UI.showToast('Error al exportar: ' + e.message, 'error');
