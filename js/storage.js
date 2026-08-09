@@ -1,5 +1,5 @@
 const DB_NAME = 'PuntoDeVentaDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 const STORES = {
   config: 'config',
@@ -11,7 +11,8 @@ const STORES = {
   caja: 'caja',
   operadores: 'operadores',
   compras: 'compras',
-  servicios: 'servicios'
+  servicios: 'servicios',
+  proveedores: 'proveedores'
 };
 
 const Storage = {
@@ -82,6 +83,13 @@ const Storage = {
           store.createIndex('estado', 'estado', { unique: false });
           store.createIndex('createdAt', 'createdAt', { unique: false });
           store.createIndex('clienteId', 'clienteId', { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains(STORES.proveedores)) {
+          const store = db.createObjectStore(STORES.proveedores, { keyPath: 'id' });
+          store.createIndex('nombre', 'nombre', { unique: false });
+          store.createIndex('rif', 'rif', { unique: false });
+          store.createIndex('activo', 'activo', { unique: false });
         }
       };
 

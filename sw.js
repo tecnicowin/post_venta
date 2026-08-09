@@ -18,6 +18,7 @@ const ASSETS = [
   '/js/payment.js',
   '/js/purchases.js',
   '/js/services.js',
+  '/js/suppliers.js',
   '/js/pdf.js',
   '/js/whatsapp.js',
   '/js/reports.js',

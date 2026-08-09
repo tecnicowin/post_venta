@@ -1,5 +1,6 @@
 const Purchases = {
   items: [],
+  _selectedSupplier: null,
 
   async load() {
     this.items = await Storage.getAll(STORES.compras);
@@ -10,6 +11,7 @@ const Purchases = {
     const compra = {
       id: Utils.generateId(),
       fecha: data.fecha || Utils.getToday(),
+      proveedorId: data.proveedorId || '',
       proveedor: data.proveedor || '',
       rif: data.rif || '',
       direccion: data.direccion || '',
@@ -37,6 +39,9 @@ const Purchases = {
 
     await Storage.add(STORES.compras, compra);
     await this.updateInventory(compra);
+    if (compra.proveedorId) {
+      await Suppliers.incrementPurchaseStats(compra.proveedorId, compra.total);
+    }
     await this.load();
     return compra;
   },
@@ -67,16 +72,39 @@ const Purchases = {
 
   async updateInventory(compra) {
     for (const item of compra.items) {
+      const costoCompra = item.precio;
+      const margen = parseFloat(item.margenGanancia) || 0;
+      const precioDetalCalculado = margen > 0 ? costoCompra * (1 + margen / 100) : (item.precioDetal || costoCompra);
+
       if (item.productoId) {
         try {
-          await Inventory.addEntry(item.productoId, item.cantidad);
+          const product = Inventory.getById(item.productoId);
+          if (product) {
+            await Inventory.update(item.productoId, {
+              cantidadExistencia: product.cantidadExistencia + item.cantidad,
+              entradas: (product.entradas || 0) + item.cantidad,
+              costoCompra: costoCompra,
+              margenGanancia: margen,
+              precioDetal: precioDetalCalculado,
+              precioMayor: item.precioMayor || costoCompra
+            });
+          } else {
+            await Inventory.addEntry(item.productoId, item.cantidad);
+          }
         } catch (e) {
           console.warn('No se pudo actualizar inventario:', item.descripcion, e);
         }
       } else {
         const existentes = await Storage.searchProducts(item.descripcion);
         if (existentes.length > 0) {
-          await Inventory.addEntry(existentes[0].id, item.cantidad);
+          const product = existentes[0];
+          await Inventory.update(product.id, {
+            cantidadExistencia: product.cantidadExistencia + item.cantidad,
+            entradas: (product.entradas || 0) + item.cantidad,
+            costoCompra: costoCompra,
+            margenGanancia: margen,
+            precioDetal: precioDetalCalculado
+          });
         } else {
           await Inventory.add({
             descripcion: item.descripcion,
@@ -86,8 +114,10 @@ const Purchases = {
             stockMinimo: 0,
             entradas: item.cantidad,
             salidas: 0,
-            precioMayor: item.precio,
-            precioDetal: item.precioDetal || item.precio,
+            costoCompra: costoCompra,
+            margenGanancia: margen,
+            precioMayor: item.precioMayor || costoCompra,
+            precioDetal: precioDetalCalculado,
             iva: item.iva || '16'
           });
         }
@@ -153,6 +183,12 @@ const Purchases = {
     const title = compra ? 'Editar Compra' : 'Nueva Compra de Inventario';
     const hoy = Utils.getToday();
 
+    if (compra && compra.proveedorId) {
+      this._selectedSupplier = Suppliers.getById(compra.proveedorId) || null;
+    } else {
+      this._selectedSupplier = null;
+    }
+
     const content = `
       <form id="purchaseForm">
         <div class="card mb-4">
@@ -172,24 +208,27 @@ const Purchases = {
                 <input type="text" class="form-control" name="control" value="${compra ? UI.escapeHtml(compra.control || '') : ''}">
               </div>
             </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Proveedor</label>
-                <input type="text" class="form-control" name="proveedor" value="${compra ? UI.escapeHtml(compra.proveedor || '') : ''}">
-              </div>
-              <div class="form-group">
-                <label class="form-label">RIF</label>
-                <input type="text" class="form-control" name="rif" value="${compra ? UI.escapeHtml(compra.rif || '') : ''}" placeholder="J-12345678-9">
+            <div class="form-group">
+              <label class="form-label">Proveedor</label>
+              <div class="flex gap-2 items-center">
+                <input type="hidden" name="proveedorId" id="proveedorId" value="${compra ? compra.proveedorId || '' : ''}">
+                <input type="text" class="form-control" id="proveedorDisplay" readonly value="${compra ? UI.escapeHtml(compra.proveedor || '') : ''}" placeholder="Seleccionar proveedor...">
+                <button type="button" class="btn btn-outline btn-sm" onclick="Purchases.pickSupplier()">🔍 Seleccionar</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="Purchases.clearSupplier()">✕</button>
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
+                <label class="form-label">RIF</label>
+                <input type="text" class="form-control" name="rif" id="proveedorRif" value="${compra ? UI.escapeHtml(compra.rif || '') : ''}" placeholder="J-12345678-9">
+              </div>
+              <div class="form-group">
                 <label class="form-label">Dirección / Zona</label>
-                <input type="text" class="form-control" name="direccion" value="${compra ? UI.escapeHtml(compra.direccion || '') : ''}">
+                <input type="text" class="form-control" name="direccion" id="proveedorDir" value="${compra ? UI.escapeHtml(compra.direccion || '') : ''}">
               </div>
               <div class="form-group">
                 <label class="form-label">Teléfono</label>
-                <input type="text" class="form-control" name="telefono" value="${compra ? UI.escapeHtml(compra.telefono || '') : ''}">
+                <input type="text" class="form-control" name="telefono" id="proveedorTel" value="${compra ? UI.escapeHtml(compra.telefono || '') : ''}">
               </div>
             </div>
           </div>
@@ -205,13 +244,15 @@ const Purchases = {
               <table class="invoice-detail-table" id="purchaseDetailTable">
                 <thead>
                   <tr>
-                    <th style="min-width:180px">Descripción</th>
-                    <th style="width:100px">Tipo</th>
-                    <th style="width:80px">Cant.</th>
-                    <th style="width:100px">P. Unitario</th>
-                    <th style="width:80px">Dto %</th>
-                    <th style="width:80px">IVA</th>
-                    <th style="width:100px">Total Línea</th>
+                    <th style="min-width:160px">Descripción</th>
+                    <th style="width:90px">Tipo</th>
+                    <th style="width:60px">Cant.</th>
+                    <th style="width:90px">P. Compra</th>
+                    <th style="width:90px">Ganancia %</th>
+                    <th style="width:90px">P. Venta</th>
+                    <th style="width:60px">Dto %</th>
+                    <th style="width:60px">IVA</th>
+                    <th style="width:90px">Total</th>
                     <th style="width:40px"></th>
                   </tr>
                 </thead>
@@ -219,7 +260,7 @@ const Purchases = {
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colspan="6"></td>
+                    <td colspan="8"></td>
                     <td class="text-right font-bold" id="purchaseSubtotal">$0.00</td>
                     <td></td>
                   </tr>
@@ -299,6 +340,28 @@ const Purchases = {
     this.recalcAll();
   },
 
+  pickSupplier() {
+    Suppliers.showPicker((prov) => {
+      this._selectedSupplier = prov;
+      const el = (id) => document.getElementById(id);
+      if (el('proveedorId')) el('proveedorId').value = prov.id;
+      if (el('proveedorDisplay')) el('proveedorDisplay').value = prov.nombre;
+      if (el('proveedorRif')) el('proveedorRif').value = prov.rif || '';
+      if (el('proveedorDir')) el('proveedorDir').value = prov.direccion || '';
+      if (el('proveedorTel')) el('proveedorTel').value = prov.telefono || '';
+    });
+  },
+
+  clearSupplier() {
+    this._selectedSupplier = null;
+    const el = (id) => document.getElementById(id);
+    if (el('proveedorId')) el('proveedorId').value = '';
+    if (el('proveedorDisplay')) el('proveedorDisplay').value = '';
+    if (el('proveedorRif')) el('proveedorRif').value = '';
+    if (el('proveedorDir')) el('proveedorDir').value = '';
+    if (el('proveedorTel')) el('proveedorTel').value = '';
+  },
+
   _editingItems: [],
 
   addItemRow() {
@@ -309,6 +372,7 @@ const Purchases = {
       categoriaId: '',
       cantidad: 1,
       precio: 0,
+      margenGanancia: Config.get('margenGeneral') || 30,
       precioDetal: 0,
       descuento: 0,
       iva: '16',
@@ -327,19 +391,31 @@ const Purchases = {
     const item = this._editingItems[idx];
     if (!item) return;
 
-    if (field === 'cantidad' || field === 'precio' || field === 'precioDetal' || field === 'descuento') {
+    if (field === 'cantidad' || field === 'precio' || field === 'precioDetal' || field === 'descuento' || field === 'margenGanancia') {
       item[field] = parseFloat(value) || 0;
     } else {
       item[field] = value;
+    }
+
+    if (field === 'precio' || field === 'margenGanancia') {
+      const margen = item.margenGanancia || 0;
+      item.precioDetal = margen > 0 ? item.precio * (1 + margen / 100) : item.precioDetal;
     }
 
     const lineTotal = item.precio * item.cantidad;
     const descLinea = lineTotal * ((item.descuento || 0) / 100);
     item.totalLinea = lineTotal - descLinea;
 
-    const td = document.getElementById(`ptotal-${idx}`);
-    if (td) td.textContent = Utils.formatCurrency(item.totalLinea);
+    this.renderDetailRows();
+    this.recalcAll();
+  },
 
+  recalcItemVenta(idx) {
+    const item = this._editingItems[idx];
+    if (!item) return;
+    const margen = item.margenGanancia || 0;
+    item.precioDetal = margen > 0 ? item.precio * (1 + margen / 100) : item.precioDetal;
+    this.renderDetailRows();
     this.recalcAll();
   },
 
@@ -349,6 +425,7 @@ const Purchases = {
 
     let html = '';
     this._editingItems.forEach((item, idx) => {
+      const precioVenta = item.precioDetal || (item.margenGanancia > 0 ? item.precio * (1 + item.margenGanancia / 100) : item.precio);
       html += `
         <tr>
           <td class="input-cell">
@@ -368,6 +445,18 @@ const Purchases = {
               onchange="Purchases.updateItemField(${idx}, 'precio', this.value)">
           </td>
           <td class="input-cell">
+            <select onchange="Purchases.updateItemField(${idx}, 'margenGanancia', this.value)">
+              <option value="0" ${!item.margenGanancia ? 'selected' : ''}>Sin ganancia</option>
+              <option value="10" ${item.margenGanancia == 10 ? 'selected' : ''}>10%</option>
+              <option value="30" ${item.margenGanancia == 30 ? 'selected' : ''}>30%</option>
+              <option value="40" ${item.margenGanancia == 40 ? 'selected' : ''}>40%</option>
+              <option value="60" ${item.margenGanancia == 60 ? 'selected' : ''}>60%</option>
+              <option value="custom" ${![0,10,30,40,60].includes(item.margenGanancia) ? 'selected' : ''}>Otro...</option>
+            </select>
+            ${![0,10,30,40,60].includes(item.margenGanancia) ? `<input type="number" value="${item.margenGanancia}" step="1" min="0" max="500" style="width:60px;margin-top:4px" onchange="Purchases.updateItemField(${idx}, 'margenGanancia', this.value)">` : ''}
+          </td>
+          <td class="text-right font-bold" style="padding:8px;color:var(--success)">${Utils.formatCurrency(precioVenta)}</td>
+          <td class="input-cell">
             <input type="number" value="${item.descuento || 0}" step="0.1" min="0" max="100"
               onchange="Purchases.updateItemField(${idx}, 'descuento', this.value)">
           </td>
@@ -386,7 +475,7 @@ const Purchases = {
     });
 
     if (this._editingItems.length === 0) {
-      html = '<tr><td colspan="8" class="text-center text-muted" style="padding:24px">Haz clic en "+ Agregar" para añadir productos a la compra</td></tr>';
+      html = '<tr><td colspan="10" class="text-center text-muted" style="padding:24px">Haz clic en "+ Agregar" para añadir productos a la compra</td></tr>';
     }
 
     tbody.innerHTML = html;
@@ -468,7 +557,6 @@ const Purchases = {
     const compra = await Storage.get(STORES.compras, id);
     if (!compra) return;
 
-    const config = Config.data;
     let itemsHtml = '';
     if (compra.items) {
       compra.items.forEach(item => {
@@ -477,6 +565,8 @@ const Purchases = {
             <td>${UI.escapeHtml(item.descripcion)}</td>
             <td class="text-center">${item.cantidad}</td>
             <td class="text-right">${Utils.formatCurrency(item.precio)}</td>
+            <td class="text-center">${item.margenGanancia || 0}%</td>
+            <td class="text-right">${Utils.formatCurrency(item.precioDetal || 0)}</td>
             <td class="text-center">${item.descuento || 0}%</td>
             <td class="text-center">${item.iva}%</td>
             <td class="text-right font-bold">${Utils.formatCurrency(item.totalLinea)}</td>
@@ -490,7 +580,6 @@ const Purchases = {
           <h2 style="margin:0">COMPRA DE INVENTARIO</h2>
           <div class="text-muted">Fecha: ${Utils.formatDate(compra.fecha)}</div>
         </div>
-
         <div style="padding:10px;background:#f1f5f9;border-radius:6px;margin-bottom:16px">
           <div class="grid grid-2">
             <div>
@@ -503,18 +592,17 @@ const Purchases = {
               <div><strong>Factura Nro:</strong> ${UI.escapeHtml(compra.facturaNro || '-')}</div>
               <div><strong>Control:</strong> ${UI.escapeHtml(compra.control || '-')}</div>
               <div><strong>Forma de Pago:</strong> ${compra.formaPago}</div>
-              ${compra.banco ? `<div><strong>Banco:</strong> ${UI.escapeHtml(compra.banco)}</div>` : ''}
-              ${compra.referencia ? `<div><strong>Referencia:</strong> ${UI.escapeHtml(compra.referencia)}</div>` : ''}
             </div>
           </div>
         </div>
-
         <table class="table">
           <thead>
             <tr>
               <th>Descripción</th>
               <th class="text-center">Cant.</th>
-              <th class="text-right">Precio</th>
+              <th class="text-right">P. Compra</th>
+              <th class="text-center">Ganancia</th>
+              <th class="text-right">P. Venta</th>
               <th class="text-center">Dto</th>
               <th class="text-center">IVA</th>
               <th class="text-right">Total</th>
@@ -522,7 +610,6 @@ const Purchases = {
           </thead>
           <tbody>${itemsHtml}</tbody>
         </table>
-
         <div class="invoice-summary">
           <div class="row subtotal"><span>Subtotal:</span><span>${Utils.formatCurrency(compra.subtotal)}</span></div>
           ${compra.descuento > 0 ? `<div class="row subtotal"><span>Descuento (${compra.descuento}%):</span><span class="text-danger">-${Utils.formatCurrency(compra.subtotal * compra.descuento / 100)}</span></div>` : ''}
@@ -566,8 +653,8 @@ const Purchases = {
       return yPos + (options.fontSize * 0.45);
     };
 
-    y = centerText(config.nombreComercial || 'MI NEGOCIO', y, { fontSize: 11, fontStyle: 'bold' });
-    y = centerText(`RIF: ${config.rif || 'N/A'}`, y + 1, { fontSize: 7 });
+    y = centerText(Utils.escapeHtml(config.nombreComercial || 'MI NEGOCIO'), y, { fontSize: 11, fontStyle: 'bold' });
+    y = centerText(`RIF: ${Utils.escapeHtml(config.rif || 'N/A')}`, y + 1, { fontSize: 7 });
     y += 3;
     doc.line(5, y, formatWidth - 5, y);
     y += 4;
@@ -577,8 +664,8 @@ const Purchases = {
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
     doc.text(`Fecha: ${Utils.formatDate(compra.fecha)}`, 5, y); y += 3;
-    doc.text(`Proveedor: ${compra.proveedor || '-'}`, 5, y); y += 3;
-    doc.text(`RIF: ${compra.rif || '-'}`, 5, y); y += 3;
+    doc.text(`Proveedor: ${Utils.escapeHtml(compra.proveedor || '-')}`, 5, y); y += 3;
+    doc.text(`RIF: ${Utils.escapeHtml(compra.rif || '-')}`, 5, y); y += 3;
     doc.text(`Factura: ${compra.facturaNro || '-'}  Ctrl: ${compra.control || '-'}`, 5, y); y += 3;
     doc.text(`Forma Pago: ${compra.formaPago}`, 5, y); y += 3;
     doc.line(5, y, formatWidth - 5, y); y += 3;
@@ -588,12 +675,12 @@ const Purchases = {
         if (y > 240) { doc.addPage(); y = 10; }
         const maxDesc = paperSize === '80mm' ? 22 : 16;
         const desc = item.descripcion.length > maxDesc ? item.descripcion.substring(0, maxDesc) : item.descripcion;
-        doc.text(`${desc}`, 5, y);
+        doc.text(`${Utils.escapeHtml(desc)}`, 5, y);
         doc.text(`x${item.cantidad}`, formatWidth - 30, y);
         doc.text(Utils.formatCurrency(item.totalLinea), formatWidth - 5, y, { align: 'right' });
         y += 3;
         doc.setFontSize(6);
-        doc.text(`  $${item.precio} x ${item.cantidad} IVA:${item.iva}%`, 5, y);
+        doc.text(`  $${item.precio} x ${item.cantidad} IVA:${item.iva}% Gan:${item.margenGanancia || 0}%`, 5, y);
         doc.setFontSize(7);
         y += 4;
       });

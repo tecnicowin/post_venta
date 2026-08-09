@@ -622,7 +622,11 @@ const Invoice = {
     const products = Inventory.items.filter(p => {
       if (!p.activo || p.cantidadExistencia <= 0) return false;
       const q = query.toLowerCase();
-      return p.descripcion.toLowerCase().includes(q) || (p.tipo && p.tipo.toLowerCase().includes(q));
+      const cat = Categories.items.find(c => c.id === p.categoriaId);
+      const catName = cat ? cat.nombre.toLowerCase() : '';
+      return p.descripcion.toLowerCase().includes(q) ||
+        (p.tipo && p.tipo.toLowerCase().includes(q)) ||
+        catName.includes(q);
     });
 
     let html = '';
@@ -634,7 +638,7 @@ const Invoice = {
           <div>
             <div class="font-bold">${UI.escapeHtml(p.descripcion)}</div>
             <div class="text-muted" style="font-size:11px">
-              ${cat ? UI.escapeHtml(cat.nombre) + ' | ' : ''}Stock: ${p.cantidadExistencia} | IVA: ${p.iva}%
+              ${cat ? UI.escapeHtml(cat.nombre) + ' | ' : ''}${p.tipo ? p.tipo + ' | ' : ''}Stock: ${p.cantidadExistencia} | IVA: ${p.iva}%
             </div>
           </div>
           <div class="text-right">
@@ -644,10 +648,23 @@ const Invoice = {
     });
 
     if (products.length === 0) {
-      html = '<div class="empty-state"><p>No se encontraron productos</p></div>';
+      html = `
+        <div class="text-center" style="padding:20px">
+          <p class="text-muted mb-2">No se encontraron productos para "${UI.escapeHtml(query)}"</p>
+          <button class="btn btn-primary btn-sm" onclick="Invoice.createProductFromPicker('${UI.escapeHtml(query)}')">+ Crear producto "${UI.escapeHtml(query)}"</button>
+        </div>`;
     }
 
     document.getElementById('productPickerList').innerHTML = html;
+  },
+
+  createProductFromPicker(nombre) {
+    UI.closeModal();
+    Inventory.showForm();
+    setTimeout(() => {
+      const descInput = document.querySelector('[name="descripcion"]');
+      if (descInput) descInput.value = nombre;
+    }, 200);
   },
 
   pickProduct(productId) {

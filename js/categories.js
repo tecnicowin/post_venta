@@ -13,6 +13,7 @@ const Categories = {
       nombre: data.nombre,
       descripcion: data.descripcion || '',
       color: data.color || this.colors[0],
+      margenGanancia: parseFloat(data.margenGanancia) || 0,
       createdAt: Utils.getNow()
     };
     await Storage.add(STORES.categorias, categoria);
@@ -75,6 +76,7 @@ const Categories = {
               </div>
             </div>
             <p class="text-muted" style="font-size:12px">${UI.escapeHtml(cat.descripcion || 'Sin descripción')}</p>
+            <div style="font-size:11px;margin-top:4px">Margen: ${cat.margenGanancia || 0}%</div>
           </div>
         </div>`;
     });
@@ -106,6 +108,11 @@ const Categories = {
           <label class="form-label">Color</label>
           <div class="color-options">${colorOptions}</div>
           <input type="hidden" name="color" id="categoryColor" value="${cat ? cat.color : this.colors[0]}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Margen de Ganancia (%)</label>
+          <input type="number" class="form-control" name="margenGanancia" value="${cat ? (cat.margenGanancia || 0) : 0}" step="1" min="0" max="500">
+          <div class="form-hint">Margen para esta categoría. Si es 0, usa el margen general.</div>
         </div>
       </form>
     `;
@@ -163,7 +170,7 @@ const Categories = {
     this.items.forEach(cat => {
       const option = document.createElement('option');
       option.value = cat.id;
-      option.textContent = cat.nombre;
+      option.textContent = cat.nombre + (cat.margenGanancia ? ` (${cat.margenGanancia}%)` : '');
       if (cat.id === selectedValue) option.selected = true;
       select.appendChild(option);
     });

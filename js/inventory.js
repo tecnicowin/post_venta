@@ -19,6 +19,8 @@ const Inventory = {
       stockMinimo: parseFloat(data.stockMinimo) || 0,
       entradas: parseFloat(data.entradas) || 0,
       salidas: parseFloat(data.salidas) || 0,
+      costoCompra: parseFloat(data.costoCompra) || 0,
+      margenGanancia: parseFloat(data.margenGanancia) || 0,
       precioMayor: parseFloat(data.precioMayor) || 0,
       precioDetal: parseFloat(data.precioDetal) || 0,
       iva: data.iva || '16',
@@ -39,6 +41,8 @@ const Inventory = {
       ...data,
       cantidadExistencia: parseFloat(data.cantidadExistencia) || existing.cantidadExistencia,
       stockMinimo: parseFloat(data.stockMinimo) || 0,
+      costoCompra: parseFloat(data.costoCompra) || existing.costoCompra || 0,
+      margenGanancia: parseFloat(data.margenGanancia) || existing.margenGanancia || 0,
       precioMayor: parseFloat(data.precioMayor) || 0,
       precioDetal: parseFloat(data.precioDetal) || 0,
       fechaModificacion: Utils.getNow()
@@ -160,6 +164,8 @@ const Inventory = {
       }},
       { label: 'Entradas', key: 'entradas', align: 'center' },
       { label: 'Salidas', key: 'salidas', align: 'center' },
+      { label: 'Costo', key: 'costoCompra', align: 'right', render: (row) => Utils.formatCurrency(row.costoCompra || 0) },
+      { label: 'Ganancia', key: 'margenGanancia', align: 'center', render: (row) => row.margenGanancia ? `${row.margenGanancia}%` : '-' },
       { label: 'P. Mayor', key: 'precioMayor', align: 'right', render: (row) => Utils.formatCurrency(row.precioMayor) },
       { label: 'P. Detal', key: 'precioDetal', align: 'right', render: (row) => Utils.formatCurrency(row.precioDetal) },
       { label: 'IVA', key: 'iva', align: 'center', render: (row) => `<span class="badge badge-${row.iva == '0' ? 'success' : row.iva == '10' ? 'warning' : 'info'}">${row.iva}%</span>` },
@@ -234,6 +240,16 @@ const Inventory = {
           <div class="form-group">
             <label class="form-label">Stock Mínimo</label>
             <input type="number" class="form-control" name="stockMinimo" value="${product ? product.stockMinimo : 0}" min="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Costo de Compra ($)</label>
+            <input type="number" class="form-control" name="costoCompra" value="${product ? product.costoCompra || '' : ''}" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Margen de Ganancia (%)</label>
+            <input type="number" class="form-control" name="margenGanancia" value="${product ? product.margenGanancia || 0 : 0}" step="1" min="0" max="500">
           </div>
         </div>
         <div class="form-row">

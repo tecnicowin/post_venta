@@ -508,14 +508,18 @@ const Services = {
     const svc = await Storage.get(STORES.servicios, id);
     if (!svc) return;
     this.currentService = { ...svc, items: [...(svc.items || [])], equipo: { ...(svc.equipo || {}) } };
-    this.currentService.estado = 'cerrada';
-    this.currentService.cerradaEn = Utils.getNow();
-    this.currentService.updatedAt = Utils.getNow();
-    this.recalculate();
-    await Storage.update(STORES.servicios, this.currentService);
-    await this.load();
-    UI.showToast('Orden cerrada. Pendiente de pago.', 'success');
-    this.renderList();
+
+    UI.confirm('¿Cerrar esta orden de servicio? El cliente ya no podrá agregar más materiales.', async () => {
+      this.currentService.estado = 'cerrada';
+      this.currentService.cerradaEn = Utils.getNow();
+      this.currentService.updatedAt = Utils.getNow();
+      this.recalculate();
+      await Storage.update(STORES.servicios, this.currentService);
+      await this.load();
+      UI.closeModal();
+      UI.showToast('Orden cerrada. Pendiente de pago.', 'success');
+      this.renderList();
+    });
   },
 
   async showPaymentModal(id) {
@@ -628,6 +632,10 @@ const Services = {
     UI.closeModal();
     UI.showToast('Pago confirmado', 'success');
     this.renderList();
+
+    if (Config.get('autoPrint')) {
+      setTimeout(() => this.printService(id), 500);
+    }
   },
 
   async viewService(id) {

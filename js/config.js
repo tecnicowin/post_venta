@@ -12,6 +12,7 @@ const Config = {
       secuenciaFactura: await Storage.getConfig('secuenciaFactura') || 1,
       iva16: await Storage.getConfig('iva16') || 0.16,
       iva10: await Storage.getConfig('iva10') || 0.10,
+      margenGeneral: await Storage.getConfig('margenGeneral') || 25,
       horaApertura: await Storage.getConfig('horaApertura') || '08:00',
       horaCierre: await Storage.getConfig('horaCierre') || '18:00',
       diasLaborables: await Storage.getConfig('diasLaborables') || [1, 2, 3, 4, 5, 6],
@@ -86,6 +87,21 @@ const Config = {
               <div class="form-group">
                 <label class="form-label">IVA 10%</label>
                 <input type="number" class="form-control" name="iva10" value="${this.data.iva10}" step="0.01" min="0" max="1">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mt-4">
+          <div class="card-header">
+            <h3>Configuración de Margen de Ganancia</h3>
+          </div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Margen General (%)</label>
+                <input type="number" class="form-control" name="margenGeneral" value="${this.data.margenGeneral || 25}" step="1" min="0" max="500">
+                <div class="form-hint">Margen por defecto para nuevos productos. Se aplica al costo de compra para calcular precio de venta.</div>
               </div>
             </div>
           </div>
@@ -190,6 +206,7 @@ const Config = {
       data.tasaDolar = parseFloat(data.tasaDolar) || 0;
       data.iva16 = parseFloat(data.iva16) || 0.16;
       data.iva10 = parseFloat(data.iva10) || 0.10;
+      data.margenGeneral = parseFloat(data.margenGeneral) || 25;
       data.printCopies = parseInt(data.printCopies) || 1;
       data.autoPrint = document.getElementById('autoPrintCheck').checked;
 

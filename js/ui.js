@@ -147,6 +147,7 @@ const UI = {
       dashboard: 'Dashboard',
       inventory: 'Inventario',
       purchases: 'Compras',
+      suppliers: 'Proveedores',
       invoice: 'Facturación',
       cashregister: 'Caja',
       services: 'Servicios',

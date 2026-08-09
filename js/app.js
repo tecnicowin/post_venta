@@ -6,6 +6,7 @@ const App = {
       await Categories.load();
       await Inventory.load();
       await Purchases.load();
+      await Suppliers.load();
       await Services.load();
       await CashRegister.load();
 
@@ -52,6 +53,9 @@ const App = {
         break;
       case 'purchases':
         Purchases.renderPage();
+        break;
+      case 'suppliers':
+        Suppliers.renderPage();
         break;
       case 'invoice':
         Invoice.renderFacturaPage();

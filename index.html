@@ -27,6 +27,7 @@
         <div class="nav-section">Gestión</div>
         <a class="nav-item" data-page="inventory" href="#"><span class="icon">📦</span> Inventario</a>
         <a class="nav-item" data-page="purchases" href="#"><span class="icon">🛒</span> Compras</a>
+        <a class="nav-item" data-page="suppliers" href="#"><span class="icon">🏢</span> Proveedores</a>
         <a class="nav-item" data-page="cashregister" href="#"><span class="icon">💰</span> Caja</a>
         <a class="nav-item" data-page="services" href="#"><span class="icon">🔧</span> Servicios</a>
         <div class="nav-section">Sistema</div>
@@ -71,6 +72,14 @@
           <div class="grid grid-4 mb-4" id="purchasesStats"></div>
           <div class="card"><div class="card-body"><div id="purchasesTable"></div></div></div>
         </section>
+        <section id="page-suppliers" class="page-section hidden">
+          <div class="flex items-center justify-between mb-4">
+            <h2>Proveedores</h2>
+            <button class="btn btn-primary" onclick="Suppliers.showForm()">+ Nuevo Proveedor</button>
+          </div>
+          <div class="grid grid-4 mb-4" id="suppliersStats"></div>
+          <div class="card"><div class="card-body"><div id="suppliersTable"></div></div></div>
+        </section>
         <section id="page-cashregister" class="page-section hidden">
           <div class="flex items-center justify-between mb-4"><h2>Control de Caja</h2></div>
           <div id="cashregisterContent"></div>
@@ -106,6 +115,7 @@
   <script src="js/invoice.js"></script>
   <script src="js/payment.js"></script>
   <script src="js/purchases.js"></script>
+  <script src="js/suppliers.js"></script>
   <script src="js/services.js"></script>
   <script src="js/pdf.js"></script>
   <script src="js/whatsapp.js"></script>
