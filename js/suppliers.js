@@ -109,7 +109,7 @@ const Suppliers = {
     });
   },
 
-  showForm(editId = null) {
+  showForm(editId = null, onCreated = null) {
     const prov = editId ? this.items.find(p => p.id === editId) : null;
     const title = prov ? 'Editar Proveedor' : 'Nuevo Proveedor';
 
@@ -161,15 +161,20 @@ const Suppliers = {
           return;
         }
         try {
+          let newProv;
           if (prov) {
-            await Suppliers.update(prov.id, data);
+            newProv = await Suppliers.update(prov.id, data);
             UI.showToast('Proveedor actualizado', 'success');
           } else {
-            await Suppliers.add(data);
+            newProv = await Suppliers.add(data);
             UI.showToast('Proveedor creado', 'success');
           }
           UI.closeModal();
           this.renderList();
+
+          if (onCreated && newProv) {
+            setTimeout(() => onCreated(newProv), 200);
+          }
         } catch (e) {
           UI.showToast(e.message, 'error');
         }
@@ -262,6 +267,8 @@ const Suppliers = {
       if (prov && callback) callback(prov);
     };
 
+    this._pickOnCreated = callback;
+
     const content = `
       <div class="search-box mb-3" style="max-width:100%">
         <span class="icon">🔍</span>
@@ -275,8 +282,26 @@ const Suppliers = {
 
     UI.showModal('Seleccionar Proveedor', content, {
       footer: `<button class="btn btn-outline" onclick="UI.closeModal()">Cancelar</button>
-               <button class="btn btn-primary" onclick="UI.closeModal(); Suppliers.showForm()">+ Nuevo Proveedor</button>`
+               <button class="btn btn-primary" onclick="Suppliers.showFormFromPicker()">+ Nuevo Proveedor</button>`
     });
+  },
+
+  showFormFromPicker() {
+    const purchaseCallback = this._pickOnCreated;
+    UI.closeModal();
+    setTimeout(() => {
+      this.showForm(null, (newProv) => {
+        if (purchaseCallback) {
+          setTimeout(() => {
+            Purchases._selectedSupplier = newProv;
+            Purchases.showForm();
+            setTimeout(() => {
+              Purchases.fillSupplierFields(newProv);
+            }, 200);
+          }, 200);
+        }
+      });
+    }, 350);
   },
 
   filterPicker(query) {

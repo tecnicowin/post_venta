@@ -343,13 +343,34 @@ const Purchases = {
   pickSupplier() {
     Suppliers.showPicker((prov) => {
       this._selectedSupplier = prov;
+      this.fillSupplierFields(prov);
+    });
+  },
+
+  fillSupplierFields(prov) {
+    const el = (id) => document.getElementById(id);
+    if (el('proveedorId')) el('proveedorId').value = prov.id;
+    if (el('proveedorDisplay')) el('proveedorDisplay').value = prov.nombre;
+    if (el('proveedorRif')) el('proveedorRif').value = prov.rif || '';
+    if (el('proveedorDir')) el('proveedorDir').value = prov.direccion || '';
+    if (el('proveedorTel')) el('proveedorTel').value = prov.telefono || '';
+  },
+
+  reopenAfterSupplier(prov) {
+    const items = this._editingItems ? [...this._editingItems] : [];
+    this._selectedSupplier = prov;
+    this.showForm();
+    setTimeout(() => {
+      this._editingItems = items;
+      this.renderDetailRows();
+      this.recalcAll();
       const el = (id) => document.getElementById(id);
       if (el('proveedorId')) el('proveedorId').value = prov.id;
       if (el('proveedorDisplay')) el('proveedorDisplay').value = prov.nombre;
       if (el('proveedorRif')) el('proveedorRif').value = prov.rif || '';
       if (el('proveedorDir')) el('proveedorDir').value = prov.direccion || '';
       if (el('proveedorTel')) el('proveedorTel').value = prov.telefono || '';
-    });
+    }, 200);
   },
 
   clearSupplier() {
