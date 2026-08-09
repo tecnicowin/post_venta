@@ -125,7 +125,42 @@ const Purchases = {
     }
   },
 
+  async reverseInventory(compra) {
+    if (!compra.items || compra.items.length === 0) return;
+    for (const item of compra.items) {
+      try {
+        if (item.productoId) {
+          const product = await Storage.get(STORES.productos, item.productoId);
+          if (product) {
+            await Inventory.update(item.productoId, {
+              cantidadExistencia: Math.max(0, product.cantidadExistencia - item.cantidad),
+              entradas: Math.max(0, (product.entradas || 0) - item.cantidad)
+            });
+          }
+        } else {
+          const existentes = await Storage.searchProducts(item.descripcion);
+          if (existentes.length > 0) {
+            const product = existentes[0];
+            await Inventory.update(product.id, {
+              cantidadExistencia: Math.max(0, product.cantidadExistencia - item.cantidad),
+              entradas: Math.max(0, (product.entradas || 0) - item.cantidad)
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Error revirtiendo inventario:', item.descripcion, e);
+      }
+    }
+  },
+
   async remove(id) {
+    const compra = await Storage.get(STORES.compras, id);
+    if (compra) {
+      await this.reverseInventory(compra);
+      if (compra.proveedorId) {
+        await Suppliers.decrementPurchaseStats(compra.proveedorId, compra.total);
+      }
+    }
     await Storage.delete(STORES.compras, id);
     await this.load();
   },
@@ -212,6 +247,7 @@ const Purchases = {
               <label class="form-label">Proveedor</label>
               <div class="flex gap-2 items-center">
                 <input type="hidden" name="proveedorId" id="proveedorId" value="${compra ? compra.proveedorId || '' : ''}">
+                <input type="hidden" name="proveedor" id="proveedorNombre" value="${compra ? UI.escapeHtml(compra.proveedor || '') : ''}">
                 <input type="text" class="form-control" id="proveedorDisplay" readonly value="${compra ? UI.escapeHtml(compra.proveedor || '') : ''}" placeholder="Seleccionar proveedor...">
                 <button type="button" class="btn btn-outline btn-sm" onclick="Purchases.pickSupplier()">🔍 Seleccionar</button>
                 <button type="button" class="btn btn-outline btn-sm" onclick="Purchases.clearSupplier()">✕</button>
@@ -350,10 +386,22 @@ const Purchases = {
   fillSupplierFields(prov) {
     const el = (id) => document.getElementById(id);
     if (el('proveedorId')) el('proveedorId').value = prov.id;
+    if (el('proveedorNombre')) el('proveedorNombre').value = prov.nombre;
     if (el('proveedorDisplay')) el('proveedorDisplay').value = prov.nombre;
     if (el('proveedorRif')) el('proveedorRif').value = prov.rif || '';
     if (el('proveedorDir')) el('proveedorDir').value = prov.direccion || '';
     if (el('proveedorTel')) el('proveedorTel').value = prov.telefono || '';
+  },
+
+  clearSupplier() {
+    this._selectedSupplier = null;
+    const el = (id) => document.getElementById(id);
+    if (el('proveedorId')) el('proveedorId').value = '';
+    if (el('proveedorNombre')) el('proveedorNombre').value = '';
+    if (el('proveedorDisplay')) el('proveedorDisplay').value = '';
+    if (el('proveedorRif')) el('proveedorRif').value = '';
+    if (el('proveedorDir')) el('proveedorDir').value = '';
+    if (el('proveedorTel')) el('proveedorTel').value = '';
   },
 
   reopenAfterSupplier(prov) {
@@ -371,16 +419,6 @@ const Purchases = {
       if (el('proveedorDir')) el('proveedorDir').value = prov.direccion || '';
       if (el('proveedorTel')) el('proveedorTel').value = prov.telefono || '';
     }, 200);
-  },
-
-  clearSupplier() {
-    this._selectedSupplier = null;
-    const el = (id) => document.getElementById(id);
-    if (el('proveedorId')) el('proveedorId').value = '';
-    if (el('proveedorDisplay')) el('proveedorDisplay').value = '';
-    if (el('proveedorRif')) el('proveedorRif').value = '';
-    if (el('proveedorDir')) el('proveedorDir').value = '';
-    if (el('proveedorTel')) el('proveedorTel').value = '';
   },
 
   _editingItems: [],

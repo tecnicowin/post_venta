@@ -7,6 +7,16 @@ const Suppliers = {
   },
 
   async add(data) {
+    const existente = this.items.find(p =>
+      p.activo && (
+        (data.nombre && p.nombre && p.nombre.toLowerCase() === data.nombre.toLowerCase()) ||
+        (data.rif && p.rif && p.rif.toLowerCase() === data.rif.toLowerCase())
+      )
+    );
+    if (existente) {
+      throw new Error(`Ya existe un proveedor con ese nombre o RIF: ${existente.nombre}`);
+    }
+
     const proveedor = {
       id: Utils.generateId(),
       nombre: data.nombre || '',
@@ -63,6 +73,15 @@ const Suppliers = {
     proveedor.totalCompras = (proveedor.totalCompras || 0) + monto;
     proveedor.cantidadCompras = (proveedor.cantidadCompras || 0) + 1;
     proveedor.ultimaCompra = Utils.getNow();
+    proveedor.updatedAt = Utils.getNow();
+    await Storage.update(STORES.proveedores, proveedor);
+  },
+
+  async decrementPurchaseStats(proveedorId, monto) {
+    const proveedor = await Storage.get(STORES.proveedores, proveedorId);
+    if (!proveedor) return;
+    proveedor.totalCompras = Math.max(0, (proveedor.totalCompras || 0) - monto);
+    proveedor.cantidadCompras = Math.max(0, (proveedor.cantidadCompras || 0) - 1);
     proveedor.updatedAt = Utils.getNow();
     await Storage.update(STORES.proveedores, proveedor);
   },
