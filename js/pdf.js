@@ -187,9 +187,43 @@ const PdfGenerator = {
     y = centerText(`RIF: ${config.rif || ''}`, y + 1, { fontSize: 6 });
     y = centerText(Utils.formatDateTime(factura.createdAt), y + 1, { fontSize: 6 });
 
-    const fileName = `Factura_${factura.numero}.pdf`;
-    doc.save(fileName);
-    UI.showToast(`PDF "${fileName}" generado`, 'success');
+    this.saveWithDialog(doc, factura);
+  },
+
+  async saveWithDialog(doc, factura) {
+    const cliente = factura.cliente || { tipo: 'detal', nombre: 'Cliente Detal' };
+    const clienteNombre = cliente.tipo === 'personalizado' ?
+      (cliente.nombreComercial || `${cliente.nombre} ${cliente.apellido}`) : 'Detal';
+    const fecha = (factura.createdAt || Utils.getNow()).substring(0, 10);
+    const month = fecha.substring(0, 7);
+    const safeName = clienteNombre.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
+    const suggestedName = `${fecha}_${safeName}_${factura.numero}.pdf`;
+    const suggestedPath = `Recibos Emitidos/${month}/${suggestedName}`;
+
+    if ('showSaveFilePicker' in window) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: suggestedName,
+          types: [{
+            description: 'PDF',
+            accept: { 'application/pdf': ['.pdf'] }
+          }]
+        });
+        const blob = doc.output('blob');
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        UI.showToast(`PDF guardado: ${handle.name}`, 'success');
+      } catch (e) {
+        if (e.name !== 'AbortError') {
+          UI.showToast('Error al guardar: ' + e.message, 'error');
+        }
+      }
+    } else {
+      const fileName = suggestedName;
+      doc.save(fileName);
+      UI.showToast(`PDF "${fileName}" descargado. Guárdalo en: ${suggestedPath}`, 'info');
+    }
   },
 
   async printReceipt(facturaId) {
