@@ -546,7 +546,7 @@ const Invoice = {
     UI.showModal('Seleccionar Cliente', content, {
       confirmText: 'Guardar Cliente',
       onConfirm: async () => {
-        const activeTab = document.querySelector('.tab-item.active');
+        const activeTab = document.querySelector('.tabs .tab-item.active');
         const isPersonalizado = activeTab && activeTab.textContent.includes('Personalizado');
 
         if (isPersonalizado) {
@@ -566,13 +566,16 @@ const Invoice = {
           UI.showToast('Cliente Detal seleccionado', 'success');
         }
         UI.closeModal();
-        Invoice.renderFacturaEditor();
+        setTimeout(() => Invoice.renderFacturaEditor(), 100);
       }
     });
   },
 
   switchClienteTab(tab, el) {
-    document.querySelectorAll('.tabs .tab-item').forEach(t => t.classList.remove('active'));
+    const tabs = el.closest('.tabs');
+    if (tabs) {
+      tabs.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+    }
     el.classList.add('active');
     document.getElementById('clienteDetalTab').classList.toggle('hidden', tab !== 'detal');
     document.getElementById('clientePersonalizadoTab').classList.toggle('hidden', tab !== 'personalizado');
