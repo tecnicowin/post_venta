@@ -333,6 +333,14 @@ const Storage = {
     return summary;
   },
 
+  async verifyDataIntegrity() {
+    const summary = await this.getDataSummary();
+    const issues = [];
+    if (summary.productos === 0) issues.push('No hay productos');
+    if (summary.categorias === 0) issues.push('No hay categorías');
+    return { summary, issues, ok: issues.length === 0 };
+  },
+
   checkBackupReminder() {
     const lastBackup = localStorage.getItem('pdv_lastBackup');
     const now = Date.now();
