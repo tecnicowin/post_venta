@@ -198,7 +198,67 @@ const Config = {
           <button type="submit" class="btn btn-primary btn-lg">💾 Guardar Configuración</button>
         </div>
       </form>
+
+      <div id="licenseStatusContainer"></div>
     `;
+
+    License.getStatus().then(status => {
+      const container = document.getElementById('licenseStatusContainer');
+      if (!container) return;
+      let html = '';
+      if (status.tipo === 'DEMO') {
+        const pct = Math.max(0, (status.diasRestantes / License.DEMO_DAYS) * 100);
+        const color = pct > 50 ? '#10b981' : pct > 20 ? '#f59e0b' : '#ef4444';
+        html = `
+          <div class="card mt-4" style="border:1px solid ${color}33">
+            <div class="card-header"><h3>🔑 Licencia</h3></div>
+            <div class="card-body">
+              <div class="flex items-center gap-3 mb-3">
+                <span class="badge badge-warning" style="font-size:13px">⚠️ DEMO</span>
+                <span>${status.diasRestantes} días restantes</span>
+              </div>
+              <div style="height:8px;background:#334155;border-radius:4px;overflow:hidden;margin-bottom:16px">
+                <div style="height:100%;width:${pct}%;background:${color};border-radius:4px;transition:width 0.3s"></div>
+              </div>
+              <div class="flex gap-2">
+                <button type="button" class="btn btn-primary" onclick="License.showActivateForm()">🔑 Activar Licencia</button>
+                <a href="https://tudominio.com/precios" target="_blank" class="btn btn-outline">🛒 Comprar</a>
+              </div>
+            </div>
+          </div>`;
+      } else if (status.activa) {
+        const color = status.tipo === 'VIP' ? '#10b981' : '#3b82f6';
+        const icon = status.tipo === 'VIP' ? '🟢' : '🔵';
+        html = `
+          <div class="card mt-4" style="border:1px solid ${color}33">
+            <div class="card-header"><h3>🔑 Licencia</h3></div>
+            <div class="card-body">
+              <div class="flex items-center gap-3 mb-2">
+                <span class="badge" style="background:${color}22;color:${color};font-size:13px">${icon} ${status.nombre}</span>
+                <span style="color:${color};font-weight:600">Activa</span>
+              </div>
+              ${status.expira ? `<p class="text-muted" style="font-size:13px">Expira: ${Utils.formatDate(status.expira)}${status.diasRestantes !== undefined ? ` (${status.diasRestantes} días)` : ''}</p>` : ''}
+              <button type="button" class="btn btn-outline btn-sm mt-2" onclick="License.deactivateConfirm()">Desactivar</button>
+            </div>
+          </div>`;
+      } else {
+        html = `
+          <div class="card mt-4" style="border:1px solid #ef444433">
+            <div class="card-header"><h3>🔑 Licencia</h3></div>
+            <div class="card-body">
+              <div class="alert alert-danger mb-3">
+                <span>❌</span>
+                <div>${Utils.escapeHtml(status.mensaje)}</div>
+              </div>
+              <div class="flex gap-2">
+                <button type="button" class="btn btn-primary" onclick="License.showActivateForm()">🔑 Activar</button>
+                <a href="https://tudominio.com/precios" target="_blank" class="btn btn-outline">🛒 Comprar</a>
+              </div>
+            </div>
+          </div>`;
+      }
+      container.innerHTML = html;
+    });
 
     document.getElementById('configFormEl').addEventListener('submit', (e) => {
       e.preventDefault();

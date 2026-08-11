@@ -2,6 +2,7 @@ const App = {
   async init() {
     try {
       await Storage.init();
+      await License.init();
       await Config.load();
       await Categories.load();
       await Inventory.load();
@@ -18,6 +19,12 @@ const App = {
       this.updateClock();
       setInterval(() => this.updateClock(), 60000);
 
+      const licenseStatus = await License.getStatus();
+      if (!licenseStatus.activa && licenseStatus.motivo !== 'demo_expirada') {
+        this.showExpiredOverlay(licenseStatus.mensaje || 'Licencia no válida');
+        return;
+      }
+
       if (!Operadores.isLoggedIn()) {
         if (Operadores.items.length === 0) {
           await this.createDefaultAdmin();
@@ -27,6 +34,10 @@ const App = {
         this.applyRoleAccess();
         UI.navigate('dashboard');
         this.renderDashboard();
+      }
+
+      if (licenseStatus.activa === false && licenseStatus.motivo === 'demo_expirada') {
+        setTimeout(() => this.showExpiredOverlay(licenseStatus.mensaje), 500);
       }
 
       Storage.checkBackupReminder();
@@ -171,7 +182,33 @@ const App = {
       topProductsHtml = '<p class="text-muted text-center" style="padding:20px">Sin ventas registradas</p>';
     }
 
+    const licenseStatus = await License.getStatus();
+    let demoBanner = '';
+    if (licenseStatus.tipo === 'DEMO') {
+      const pct = Math.max(0, (licenseStatus.diasRestantes / License.DEMO_DAYS) * 100);
+      const color = pct > 50 ? '#10b981' : pct > 20 ? '#f59e0b' : '#ef4444';
+      demoBanner = `
+        <div class="card mb-4" style="border:1px solid ${color}44;background:${color}08">
+          <div class="card-body flex items-center justify-between" style="padding:12px 20px">
+            <div class="flex items-center gap-3">
+              <span style="font-size:20px">⚠️</span>
+              <div>
+                <strong>Modo Demo</strong> — ${licenseStatus.diasRestantes} días restantes
+                <div style="height:4px;background:#334155;border-radius:2px;margin-top:6px;width:200px">
+                  <div style="height:100%;width:${pct}%;background:${color};border-radius:2px"></div>
+                </div>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button class="btn btn-primary btn-sm" onclick="License.showActivateForm()">🔑 Activar</button>
+              <a href="https://tudominio.com/precios" target="_blank" class="btn btn-outline btn-sm">🛒 Comprar</a>
+            </div>
+          </div>
+        </div>`;
+    }
+
     container.innerHTML = `
+      ${demoBanner}
       <div class="grid grid-4 mb-4">
         <div class="stat-card">
           <div class="stat-icon green">💰</div>
@@ -275,6 +312,28 @@ const App = {
         return `<span class="badge badge-${colors[row.estado] || 'secondary'}">${row.estado}</span>`;
       }}
     ], recentInvoices, { emptyText: 'No hay facturas hoy' });
+  },
+
+  showExpiredOverlay(mensaje) {
+    const existing = document.getElementById('licenseExpiredOverlay');
+    if (existing) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'licenseExpiredOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.95);z-index:99999;display:flex;align-items:center;justify-content:center;text-align:center;color:#e2e8f0;font-family:system-ui';
+    overlay.innerHTML = `
+      <div style="max-width:500px;padding:40px">
+        <div style="font-size:64px;margin-bottom:16px">🔒</div>
+        <h1 style="font-size:28px;margin-bottom:12px">Demo Expirada</h1>
+        <p style="color:#94a3b8;font-size:16px;margin-bottom:8px">${Utils.escapeHtml(mensaje || 'Tu período de demo ha finalizado.')}</p>
+        <p style="color:#64748b;font-size:14px;margin-bottom:24px">Compra una licencia para seguir usando la app.</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <button onclick="License.showActivateForm()" style="padding:12px 24px;background:#3b82f6;color:white;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer">🔑 Activar Licencia</button>
+          <a href="https://tudominio.com/precios" target="_blank" style="padding:12px 24px;background:#10b981;color:white;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;text-decoration:none">🛒 Comprar Ahora</a>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
   },
 
   updateClock() {

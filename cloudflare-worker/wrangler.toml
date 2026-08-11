@@ -1,0 +1,14 @@
+name = "pdv-license-api"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+ADMIN_TOKEN = "CHANGE_ME_TO_A_STRONG_TOKEN"
+HMAC_SECRET = "CHANGE_ME_TO_A_STRONG_SECRET"
+
+[[kv_namespaces]]
+binding = "LICENSES_KV"
+id = "YOUR_KV_NAMESPACE_ID"
+
+[env.production]
+vars = { ADMIN_TOKEN = "your-admin-token", HMAC_SECRET = "your-hmac-secret" }
