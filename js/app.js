@@ -9,6 +9,7 @@ const App = {
       await Suppliers.load();
       await Services.load();
       await CashRegister.load();
+      await Operadores.load();
 
       UI.init();
 
@@ -16,11 +17,18 @@ const App = {
       this.updateClock();
       setInterval(() => this.updateClock(), 60000);
 
-      UI.navigate('dashboard');
-      this.renderDashboard();
+      if (!Operadores.isLoggedIn()) {
+        if (Operadores.items.length === 0) {
+          await this.createDefaultAdmin();
+        }
+        Operadores.showLogin();
+      } else {
+        this.applyRoleAccess();
+        UI.navigate('dashboard');
+        this.renderDashboard();
+      }
 
       Storage.checkBackupReminder();
-
       console.log('Punto de Venta inicializado correctamente');
     } catch (error) {
       console.error('Error initializing app:', error);
@@ -34,11 +42,45 @@ const App = {
     }
   },
 
+  async createDefaultAdmin() {
+    await Operadores.add({
+      nombre: 'Administrador',
+      pin: '1234',
+      rol: 'admin',
+      activo: true
+    });
+    UI.showToast('Admin inicial creado (PIN: 1234). Cámbialo después.', 'info');
+  },
+
+  applyRoleAccess() {
+    const op = Operadores.current;
+    if (!op) return;
+
+    const opEl = document.getElementById('headerOperator');
+    if (opEl) {
+      opEl.textContent = `${op.rol === 'admin' ? '🛡️' : '👤'} ${op.nombre}`;
+      opEl.title = `${op.nombre} (${op.rol}) - Click para cerrar sesión`;
+    }
+
+    document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+      const page = item.dataset.page;
+      if (Operadores.canAccess(page)) {
+        item.style.display = '';
+      } else {
+        item.style.display = 'none';
+      }
+    });
+  },
+
   setupNavigation() {
     document.querySelectorAll('.nav-item[data-page]').forEach(item => {
       item.addEventListener('click', (e) => {
         e.preventDefault();
         const page = item.dataset.page;
+        if (!Operadores.canAccess(page)) {
+          UI.showToast('No tienes acceso a este módulo', 'error');
+          return;
+        }
         UI.navigate(page);
         this.loadPage(page);
       });
@@ -46,6 +88,12 @@ const App = {
   },
 
   loadPage(page) {
+    if (!Operadores.canAccess(page)) {
+      UI.showToast('Acceso denegado', 'error');
+      UI.navigate('dashboard');
+      this.renderDashboard();
+      return;
+    }
     switch (page) {
       case 'dashboard':
         this.renderDashboard();
@@ -74,6 +122,9 @@ const App = {
       case 'reports':
         Reports.renderPage();
         break;
+      case 'operadores':
+        Operadores.renderPage();
+        break;
     }
   },
 
@@ -89,6 +140,33 @@ const App = {
     const totalHoy = pagadas.reduce((sum, f) => sum + (f.total || 0), 0);
     const totalInventario = productos.reduce((sum, p) => sum + (p.cantidadExistencia * p.precioDetal), 0);
     const lowStock = productos.filter(p => p.activo && p.stockMinimo > 0 && p.cantidadExistencia <= p.stockMinimo);
+
+    const allPagadas = facturas.filter(f => f.estado === 'pagada');
+    const productSales = {};
+    allPagadas.forEach(f => {
+      if (f.items) {
+        f.items.forEach(item => {
+          const key = item.productoId || item.descripcion;
+          if (!productSales[key]) productSales[key] = { nombre: item.descripcion, cantidad: 0, total: 0 };
+          productSales[key].cantidad += item.cantidad || 0;
+          productSales[key].total += item.totalPorRubro || 0;
+        });
+      }
+    });
+    const topProducts = Object.values(productSales)
+      .sort((a, b) => b.cantidad - a.cantidad)
+      .slice(0, 10);
+
+    let topProductsHtml = '';
+    if (topProducts.length > 0) {
+      topProductsHtml = '<table class="table" style="font-size:12px"><thead><tr><th>#</th><th>Producto</th><th class="text-center">Cant.</th><th class="text-right">Total</th></tr></thead><tbody>';
+      topProducts.forEach((p, i) => {
+        topProductsHtml += `<tr><td>${i + 1}</td><td>${UI.escapeHtml(p.nombre)}</td><td class="text-center">${p.cantidad}</td><td class="text-right">${Utils.formatCurrency(p.total)}</td></tr>`;
+      });
+      topProductsHtml += '</tbody></table>';
+    } else {
+      topProductsHtml = '<p class="text-muted text-center" style="padding:20px">Sin ventas registradas</p>';
+    }
 
     container.innerHTML = `
       <div class="grid grid-4 mb-4">
@@ -122,7 +200,16 @@ const App = {
         </div>
       </div>
 
-      <div class="grid grid-2">
+      <div class="grid grid-2 mb-4">
+        <div class="card">
+          <div class="card-header">
+            <h3>🏆 Top 10 Productos Más Vendidos</h3>
+          </div>
+          <div class="card-body" id="dashboardTopProducts" style="padding:0">
+            ${topProductsHtml}
+          </div>
+        </div>
+
         <div class="card">
           <div class="card-header">
             <h3>Últimas Facturas</h3>
@@ -130,47 +217,47 @@ const App = {
           </div>
           <div class="card-body" id="dashboardRecentInvoices"></div>
         </div>
+      </div>
 
-        <div class="card">
-          <div class="card-header">
-            <h3>Acciones Rápidas</h3>
-          </div>
-          <div class="card-body">
-            <div class="grid grid-2 gap-3">
-              <button class="btn btn-primary w-full" onclick="Invoice.showNewInvoice()">+ Nueva Factura</button>
-              <button class="btn btn-outline w-full" onclick="UI.navigate('inventory'); Inventory.renderList();">📦 Inventario</button>
-              ${CashRegister.isOpen() ?
-                `<button class="btn btn-outline w-full" onclick="CashRegister.showCloseModal()">🔒 Cerrar Caja</button>` :
-                (() => {
-                  const hoursCheck = CashRegister.checkBusinessHours();
-                  if (!hoursCheck.open) {
-                    const diasLaborables = Config.get('diasLaborables') || [1, 2, 3, 4, 5, 6];
-                    const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-                    const openDays = diasLaborables.map(d => dayNames[d]).join(', ');
-                    const horaApertura = Config.get('horaApertura') || '08:00';
-                    const horaCierre = Config.get('horaCierre') || '18:00';
-                    if (hoursCheck.reason === 'day') {
-                      return `<button class="btn btn-outline w-full" disabled title="Días: ${openDays}">⏰ Caja (no día laborable)</button>`;
-                    } else {
-                      return `<button class="btn btn-outline w-full" disabled title="Horario: ${horaApertura} - ${horaCierre}">⏰ Caja (fuera de horario)</button>`;
-                    }
+      <div class="card">
+        <div class="card-header">
+          <h3>Acciones Rápidas</h3>
+        </div>
+        <div class="card-body">
+          <div class="grid grid-2 gap-3">
+            <button class="btn btn-primary w-full" onclick="Invoice.showNewInvoice()">+ Nueva Factura</button>
+            ${Operadores.isAdmin() ? `<button class="btn btn-outline w-full" onclick="UI.navigate('inventory'); Inventory.renderList();">📦 Inventario</button>` : ''}
+            ${CashRegister.isOpen() ?
+              `<button class="btn btn-outline w-full" onclick="CashRegister.showCloseModal()">🔒 Cerrar Caja</button>` :
+              (() => {
+                const hoursCheck = CashRegister.checkBusinessHours();
+                if (!hoursCheck.open) {
+                  const diasLaborables = Config.get('diasLaborables') || [1, 2, 3, 4, 5, 6];
+                  const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                  const openDays = diasLaborables.map(d => dayNames[d]).join(', ');
+                  const horaApertura = Config.get('horaApertura') || '08:00';
+                  const horaCierre = Config.get('horaCierre') || '18:00';
+                  if (hoursCheck.reason === 'day') {
+                    return `<button class="btn btn-outline w-full" disabled title="Días: ${openDays}">⏰ Caja (no día laborable)</button>`;
+                  } else {
+                    return `<button class="btn btn-outline w-full" disabled title="Horario: ${horaApertura} - ${horaCierre}">⏰ Caja (fuera de horario)</button>`;
                   }
-                  return `<button class="btn btn-outline w-full" onclick="CashRegister.showOpenModal()">🔓 Abrir Caja</button>`;
-                })()
-              }
-              <button class="btn btn-outline w-full" onclick="UI.navigate('reports'); Reports.renderPage();">📊 Reportes</button>
-            </div>
-
-            ${lowStock.length > 0 ? `
-              <div class="alert alert-warning mt-4">
-                <span>⚠️</span>
-                <div>
-                  <strong>${lowStock.length} productos</strong> con stock bajo.
-                  <button class="btn btn-ghost btn-sm" onclick="UI.navigate('inventory'); Inventory.renderList();" style="padding:2px 8px">Ver</button>
-                </div>
-              </div>
-            ` : ''}
+                }
+                return `<button class="btn btn-outline w-full" onclick="CashRegister.showOpenModal()">🔓 Abrir Caja</button>`;
+              })()
+            }
+            ${Operadores.isAdmin() ? `<button class="btn btn-outline w-full" onclick="UI.navigate('reports'); Reports.renderPage();">📊 Reportes</button>` : ''}
           </div>
+
+          ${lowStock.length > 0 ? `
+            <div class="alert alert-warning mt-4">
+              <span>⚠️</span>
+              <div>
+                <strong>${lowStock.length} productos</strong> con stock bajo.
+                ${Operadores.isAdmin() ? `<button class="btn btn-ghost btn-sm" onclick="UI.navigate('inventory'); Inventory.renderList();" style="padding:2px 8px">Ver</button>` : ''}
+              </div>
+            </div>
+          ` : ''}
         </div>
       </div>
     `;

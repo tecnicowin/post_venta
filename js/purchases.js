@@ -762,7 +762,9 @@ const Purchases = {
 
   confirmDelete(id) {
     const compra = this.items.find(c => c.id === id);
-    UI.confirm(`¿Eliminar esta compra de "${compra?.proveedor || 'proveedor'}"?`, async () => {
+    if (!compra) return;
+
+    Operadores.showAdminPinModal(async () => {
       try {
         await this.remove(id);
         UI.showToast('Compra eliminada', 'success');

@@ -215,7 +215,7 @@ const Invoice = {
         return `<span class="badge badge-${colors[row.estado] || 'secondary'}">${row.estado}</span>`;
       }},
       { label: 'Fecha', render: (row) => Utils.formatDateTime(row.createdAt) },
-      { label: '', align: 'center', width: '160px', render: (row) => `
+      { label: '', align: 'center', width: '180px', render: (row) => `
         <div class="flex gap-1 justify-center">
           ${row.estado === 'borrador' ? `
             <button class="btn btn-ghost btn-sm" onclick="Invoice.editFactura('${row.id}')" title="Editar">✏️</button>
@@ -225,6 +225,9 @@ const Invoice = {
             <button class="btn btn-ghost btn-sm" onclick="PdfGenerator.printReceipt('${row.id}')" title="Imprimir">🖨️</button>
             <button class="btn btn-ghost btn-sm" onclick="PdfGenerator.generateAndDownload('${row.id}')" title="PDF">📄</button>
             <button class="btn btn-ghost btn-sm" onclick="WhatsAppShare.share('${row.id}')" title="WhatsApp">📱</button>
+          ` : ''}
+          ${Operadores.isAdmin() ? `
+            <button class="btn btn-ghost btn-sm" onclick="Invoice.confirmDelete('${row.id}')" title="Eliminar">🗑️</button>
           ` : ''}
         </div>`
     }], recentes, {
@@ -700,5 +703,55 @@ const Invoice = {
       return;
     }
     Payment.showPaymentModal(this.currentInvoice);
+  },
+
+  confirmDelete(id) {
+    const factura = this.allFacturas.find(f => f.id === id);
+    if (!factura) return;
+
+    Operadores.showAdminPinModal(async () => {
+      try {
+        await this.remove(id);
+        UI.showToast('Factura eliminada', 'success');
+        await this.load();
+        this.renderFacturaList();
+      } catch (e) {
+        UI.showToast('Error: ' + e.message, 'error');
+      }
+    });
+  },
+
+  async remove(id) {
+    const factura = await Storage.get(STORES.facturas, id);
+    if (!factura) throw new Error('Factura no encontrada');
+
+    if (factura.estado === 'pagada' && factura.items) {
+      for (const item of factura.items) {
+        try {
+          if (item.productoId) {
+            const product = await Storage.get(STORES.productos, item.productoId);
+            if (product) {
+              await Inventory.update(item.productoId, {
+                cantidadExistencia: product.cantidadExistencia + item.cantidad,
+                salidas: Math.max(0, (product.salidas || 0) - item.cantidad)
+              });
+            }
+          } else {
+            const existentes = await Storage.searchProducts(item.descripcion);
+            if (existentes.length > 0) {
+              const product = existentes[0];
+              await Inventory.update(product.id, {
+                cantidadExistencia: product.cantidadExistencia + item.cantidad,
+                salidas: Math.max(0, (product.salidas || 0) - item.cantidad)
+              });
+            }
+          }
+        } catch (e) {
+          console.warn('Error revirtiendo stock:', item.descripcion, e);
+        }
+      }
+    }
+
+    await Storage.delete(STORES.facturas, id);
   }
 };

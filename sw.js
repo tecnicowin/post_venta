@@ -1,4 +1,4 @@
-const CACHE_NAME = 'punto-de-venta-v2';
+const CACHE_NAME = 'punto-de-venta-v3';
 const ASSETS = [
   '/',
   '/index.html',
@@ -19,6 +19,7 @@ const ASSETS = [
   '/js/purchases.js',
   '/js/services.js',
   '/js/suppliers.js',
+  '/js/operadores.js',
   '/js/pdf.js',
   '/js/whatsapp.js',
   '/js/reports.js',

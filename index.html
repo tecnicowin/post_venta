@@ -33,6 +33,7 @@
         <div class="nav-section">Sistema</div>
         <a class="nav-item" data-page="reports" href="#"><span class="icon">📈</span> Reportes</a>
         <a class="nav-item" data-page="config" href="#"><span class="icon">⚙️</span> Configuración</a>
+        <a class="nav-item" data-page="operadores" href="#"><span class="icon">👤</span> Operadores</a>
       </nav>
       <div class="sidebar-footer"><div>Punto de Venta v1.0</div></div>
     </aside>
@@ -43,6 +44,7 @@
           <h1 class="header-title">Dashboard</h1>
         </div>
         <div class="header-right">
+          <span id="headerOperator" class="header-badge" style="cursor:pointer" onclick="Operadores.logout(); location.reload();" title="Cerrar sesión"></span>
           <span id="headerClock" class="header-badge"></span>
           <div class="header-badge cash-status"><span class="icon">●</span><span>Caja Cerrada</span></div>
         </div>
@@ -100,6 +102,14 @@
           <div class="flex items-center justify-between mb-4"><h2>Configuración</h2></div>
           <div id="configForm"></div>
         </section>
+        <section id="page-operadores" class="page-section hidden">
+          <div class="flex items-center justify-between mb-4">
+            <h2>Operadores</h2>
+            <button class="btn btn-primary" onclick="Operadores.showForm()">+ Nuevo Operador</button>
+          </div>
+          <div class="grid grid-4 mb-4" id="operadoresStats"></div>
+          <div class="card"><div class="card-body"><div id="operadoresTable"></div></div></div>
+        </section>
       </div>
     </main>
   </div>
@@ -116,6 +126,7 @@
   <script src="js/payment.js"></script>
   <script src="js/purchases.js"></script>
   <script src="js/suppliers.js"></script>
+  <script src="js/operadores.js"></script>
   <script src="js/services.js"></script>
   <script src="js/pdf.js"></script>
   <script src="js/whatsapp.js"></script>
