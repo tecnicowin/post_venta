@@ -38,6 +38,7 @@ const Purchases = {
     this.calcTotals(compra);
 
     await Storage.add(STORES.compras, compra);
+    await Storage.log('compra_registrar', `Compra ${compra.facturaNro || ''} - Proveedor: ${compra.proveedor || 'N/A'} - Total: ${Utils.formatCurrency(compra.total)}`);
     await this.updateInventory(compra);
     if (compra.proveedorId) {
       await Suppliers.incrementPurchaseStats(compra.proveedorId, compra.total);
@@ -51,14 +52,17 @@ const Purchases = {
     let iva16 = 0;
     let iva10 = 0;
 
+    const iva16Rate = Config.get('iva16') || 0.16;
+    const iva10Rate = Config.get('iva10') || 0.10;
+
     compra.items.forEach(item => {
       const lineTotal = item.precio * item.cantidad;
       const descLinea = lineTotal * ((item.descuento || 0) / 100);
       item.totalLinea = lineTotal - descLinea;
       subtotal += item.totalLinea;
 
-      if (item.iva === '16') iva16 += item.totalLinea * 0.16;
-      else if (item.iva === '10') iva10 += item.totalLinea * 0.10;
+      if (item.iva === '16') iva16 += item.totalLinea * iva16Rate;
+      else if (item.iva === '10') iva10 += item.totalLinea * iva10Rate;
     });
 
     compra.subtotal = subtotal;
@@ -162,6 +166,7 @@ const Purchases = {
       }
     }
     await Storage.delete(STORES.compras, id);
+    await Storage.log('compra_eliminar', `Compra eliminada`);
     await this.load();
   },
 
@@ -528,14 +533,17 @@ const Purchases = {
     let iva16 = 0;
     let iva10 = 0;
 
+    const iva16Rate = Config.get('iva16') || 0.16;
+    const iva10Rate = Config.get('iva10') || 0.10;
+
     this._editingItems.forEach(item => {
       const lineTotal = item.precio * item.cantidad;
       const descLinea = lineTotal * ((item.descuento || 0) / 100);
       item.totalLinea = lineTotal - descLinea;
       subtotal += item.totalLinea;
 
-      if (item.iva === '16') iva16 += item.totalLinea * 0.16;
-      else if (item.iva === '10') iva10 += item.totalLinea * 0.10;
+      if (item.iva === '16') iva16 += item.totalLinea * iva16Rate;
+      else if (item.iva === '10') iva10 += item.totalLinea * iva10Rate;
     });
 
     const descGlobal = parseFloat(document.querySelector('[name="descuentoGlobal"]')?.value) || 0;
@@ -604,8 +612,21 @@ const Purchases = {
       }
 
       if (editId) {
-        await Storage.update(STORES.compras, { ...(await Storage.get(STORES.compras, editId)), ...data });
-        UI.showToast('Compra actualizada', 'success');
+        const oldCompra = await Storage.get(STORES.compras, editId);
+        if (oldCompra) {
+          await this.reverseInventory(oldCompra);
+          if (oldCompra.proveedorId) {
+            await Suppliers.decrementPurchaseStats(oldCompra.proveedorId, oldCompra.total);
+          }
+        }
+        const updatedData = { ...(oldCompra || {}), ...data };
+        this.calcTotals(updatedData);
+        await Storage.update(STORES.compras, updatedData);
+        await this.updateInventory(updatedData);
+        if (updatedData.proveedorId) {
+          await Suppliers.incrementPurchaseStats(updatedData.proveedorId, updatedData.total);
+        }
+        UI.showToast('Compra actualizada e inventario reconciliado', 'success');
       } else {
         await this.add(data);
         UI.showToast('Compra registrada e inventario actualizado', 'success');

@@ -28,6 +28,7 @@
         <a class="nav-item" data-page="inventory" href="#"><span class="icon">📦</span> Inventario</a>
         <a class="nav-item" data-page="purchases" href="#"><span class="icon">🛒</span> Compras</a>
         <a class="nav-item" data-page="suppliers" href="#"><span class="icon">🏢</span> Proveedores</a>
+        <a class="nav-item" data-page="clientes" href="#"><span class="icon">👥</span> Clientes</a>
         <a class="nav-item" data-page="cashregister" href="#"><span class="icon">💰</span> Caja</a>
         <a class="nav-item" data-page="services" href="#"><span class="icon">🔧</span> Servicios</a>
         <div class="nav-section">Sistema</div>
@@ -82,6 +83,17 @@
           <div class="grid grid-4 mb-4" id="suppliersStats"></div>
           <div class="card"><div class="card-body"><div id="suppliersTable"></div></div></div>
         </section>
+        <section id="page-clientes" class="page-section hidden">
+          <div class="flex items-center justify-between mb-4">
+            <h2>Clientes</h2>
+            <div class="flex gap-2 items-center">
+              <div class="search-box"><span class="icon">🔍</span><input type="text" class="form-control" placeholder="Buscar..." id="clientesSearch" oninput="Clientes.filter(this.value)"></div>
+              <button class="btn btn-primary" onclick="Clientes.showForm()">+ Nuevo Cliente</button>
+            </div>
+          </div>
+          <div class="grid grid-4 mb-4" id="clientesStats"></div>
+          <div class="card"><div class="card-body"><div id="clientesTable"></div></div></div>
+        </section>
         <section id="page-cashregister" class="page-section hidden">
           <div class="flex items-center justify-between mb-4"><h2>Control de Caja</h2></div>
           <div id="cashregisterContent"></div>
@@ -126,6 +138,7 @@
   <script src="js/payment.js"></script>
   <script src="js/purchases.js"></script>
   <script src="js/suppliers.js"></script>
+  <script src="js/clientes.js"></script>
   <script src="js/operadores.js"></script>
   <script src="js/services.js"></script>
   <script src="js/pdf.js"></script>

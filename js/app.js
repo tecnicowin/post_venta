@@ -7,6 +7,7 @@ const App = {
       await Inventory.load();
       await Purchases.load();
       await Suppliers.load();
+      await Clientes.load();
       await Services.load();
       await CashRegister.load();
       await Operadores.load();
@@ -35,7 +36,7 @@ const App = {
       document.body.innerHTML = `
         <div style="padding:40px;text-align:center">
           <h1>Error al inicializar</h1>
-          <p>${error.message}</p>
+          <p>${Utils.escapeHtml(error.message)}</p>
           <button onclick="location.reload()" style="margin-top:20px;padding:10px 20px">Recargar</button>
         </div>
       `;
@@ -107,6 +108,9 @@ const App = {
       case 'suppliers':
         Suppliers.renderPage();
         break;
+      case 'clientes':
+        Clientes.renderPage();
+        break;
       case 'invoice':
         Invoice.renderFacturaPage();
         break;
@@ -133,10 +137,9 @@ const App = {
     if (!container) return;
 
     const today = Utils.getToday();
-    const facturas = await Storage.getAll(STORES.facturas);
+    const facturas = await Storage.getFacturasByDate(today);
     const productos = await Storage.getAll(STORES.productos);
-    const todayFacturas = facturas.filter(f => f.createdAt && f.createdAt.startsWith(today));
-    const pagadas = todayFacturas.filter(f => f.estado === 'pagada');
+    const pagadas = facturas.filter(f => f.estado === 'pagada');
     const totalHoy = pagadas.reduce((sum, f) => sum + (f.total || 0), 0);
     const totalInventario = productos.reduce((sum, p) => sum + (p.cantidadExistencia * p.precioDetal), 0);
     const lowStock = productos.filter(p => p.activo && p.stockMinimo > 0 && p.cantidadExistencia <= p.stockMinimo);
@@ -262,7 +265,7 @@ const App = {
       </div>
     `;
 
-    const recentInvoices = todayFacturas.slice(0, 5);
+    const recentInvoices = facturas.filter(f => f.estado === 'pagada').slice(0, 5);
     UI.renderTable('dashboardRecentInvoices', [
       { label: '#', key: 'numero', width: '60px' },
       { label: 'Cliente', render: (row) => row.cliente ? UI.escapeHtml(row.cliente.nombre || 'Detal') : 'Detal' },

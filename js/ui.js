@@ -42,7 +42,7 @@ const UI = {
     toast.className = `toast ${type}`;
     toast.innerHTML = `
       <span>${icons[type] || 'ℹ'}</span>
-      <span class="message">${message}</span>
+      <span class="message">${Utils.escapeHtml(message)}</span>
       <button class="close" onclick="this.parentElement.remove()">×</button>
     `;
 
@@ -110,7 +110,7 @@ const UI = {
   },
 
   confirm(message, onConfirm) {
-    this.showModal('Confirmar', `<p>${message}</p>`, {
+    this.showModal('Confirmar', `<p>${Utils.escapeHtml(message)}</p>`, {
       size: 'sm',
       confirmText: 'Confirmar',
       onConfirm: () => {
@@ -156,7 +156,9 @@ const UI = {
       cashregister: 'Caja',
       services: 'Servicios',
       config: 'Configuración',
-      reports: 'Reportes'
+      reports: 'Reportes',
+      operadores: 'Operadores',
+      clientes: 'Clientes'
     };
     if (headerTitle) headerTitle.textContent = titles[page] || 'Dashboard';
 

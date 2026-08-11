@@ -1,5 +1,5 @@
 const DB_NAME = 'PuntoDeVentaDB';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 const STORES = {
   config: 'config',
@@ -12,7 +12,8 @@ const STORES = {
   operadores: 'operadores',
   compras: 'compras',
   servicios: 'servicios',
-  proveedores: 'proveedores'
+  proveedores: 'proveedores',
+  bitacora: 'bitacora'
 };
 
 const Storage = {
@@ -90,6 +91,13 @@ const Storage = {
           store.createIndex('nombre', 'nombre', { unique: false });
           store.createIndex('rif', 'rif', { unique: false });
           store.createIndex('activo', 'activo', { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains(STORES.bitacora)) {
+          const store = db.createObjectStore(STORES.bitacora, { keyPath: 'id' });
+          store.createIndex('fecha', 'fecha', { unique: false });
+          store.createIndex('accion', 'accion', { unique: false });
+          store.createIndex('operadorId', 'operadorId', { unique: false });
         }
       };
 
@@ -355,5 +363,21 @@ const Storage = {
 
   markBackupDone() {
     localStorage.setItem('pdv_lastBackup', Date.now().toString());
+  },
+
+  async log(accion, detalle, operadorId = '') {
+    try {
+      const entry = {
+        id: Utils.generateId(),
+        fecha: Utils.getNow(),
+        accion,
+        detalle: detalle || '',
+        operadorId: operadorId || (Operadores.current ? Operadores.current.id : ''),
+        operadorNombre: Operadores.current ? Operadores.current.nombre : 'Sistema'
+      };
+      await this.add(STORES.bitacora, entry);
+    } catch (e) {
+      console.warn('Error logging audit:', e);
+    }
   }
 };

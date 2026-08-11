@@ -5,6 +5,7 @@ const Invoice = {
   async load() {
     this.allFacturas = await Storage.getAll(STORES.facturas);
     this.allFacturas.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    this.filteredFacturas = [...this.allFacturas];
   },
 
   createNew() {
@@ -124,6 +125,9 @@ const Invoice = {
     if (!this.currentInvoice) return;
     const inv = this.currentInvoice;
 
+    const iva16Rate = Config.get('iva16') || 0.16;
+    const iva10Rate = Config.get('iva10') || 0.10;
+
     let subtotal = 0;
     let totalIva16 = 0;
     let totalIva10 = 0;
@@ -132,8 +136,8 @@ const Invoice = {
     inv.items.forEach(item => {
       subtotal += item.totalPorRubro;
       const baseIva = item.totalPorRubro;
-      if (item.iva === '16') totalIva16 += baseIva * 0.16;
-      else if (item.iva === '10') totalIva10 += baseIva * 0.10;
+      if (item.iva === '16') totalIva16 += baseIva * iva16Rate;
+      else if (item.iva === '10') totalIva10 += baseIva * iva10Rate;
     });
 
     inv.subtotal = subtotal;
@@ -157,20 +161,49 @@ const Invoice = {
     this.recalculate();
 
     if (status === 'pagada') {
-      const stockErrors = [];
+      const stockCheck = [];
       for (const item of this.currentInvoice.items) {
-        try {
-          await Inventory.addExit(item.productoId, item.cantidad);
-        } catch (e) {
-          stockErrors.push(`${item.descripcion}: ${e.message}`);
+        const product = Inventory.getById(item.productoId);
+        if (!product) {
+          stockCheck.push({ ok: false, desc: item.descripcion, msg: 'Producto no encontrado' });
+        } else if (product.cantidadExistencia < item.cantidad) {
+          stockCheck.push({ ok: false, desc: item.descripcion, msg: `Stock insuficiente (${product.cantidadExistencia})` });
+        } else {
+          stockCheck.push({ ok: true, product, item });
         }
       }
-      if (stockErrors.length > 0) {
-        UI.showToast(`Stock no actualizado: ${stockErrors.join('; ')}`, 'warning');
+
+      const errors = stockCheck.filter(s => !s.ok);
+      if (errors.length > 0) {
+        throw new Error(`Stock insuficiente: ${errors.map(e => `${e.desc}: ${e.msg}`).join('; ')}`);
+      }
+
+      const deducted = [];
+      try {
+        for (const entry of stockCheck) {
+          await Inventory.addExit(entry.item.productoId, entry.item.cantidad);
+          deducted.push(entry);
+        }
+      } catch (e) {
+        for (const entry of deducted.reverse()) {
+          try {
+            const product = await Storage.get(STORES.productos, entry.item.productoId);
+            if (product) {
+              await Inventory.update(entry.item.productoId, {
+                cantidadExistencia: product.cantidadExistencia + entry.item.cantidad,
+                salidas: Math.max(0, (product.salidas || 0) - entry.item.cantidad)
+              });
+            }
+          } catch (revErr) {
+            console.warn('Error revirtiendo stock:', entry.item.descripcion, revErr);
+          }
+        }
+        throw new Error(`Error al descontar stock: ${e.message}`);
       }
     }
 
     await Storage.update(STORES.facturas, this.currentInvoice);
+    await Storage.log('factura_guardar', `Factura #${this.currentInvoice.numero} - ${status} - Total: ${Utils.formatCurrency(this.currentInvoice.total)}`);
     const saved = { ...this.currentInvoice };
     await this.load();
     return saved;
@@ -191,11 +224,49 @@ const Invoice = {
         <div class="flex gap-2">
           <button class="btn btn-primary" onclick="Invoice.showNewInvoice()">+ Nueva Factura</button>
         </div>
+        <div class="flex gap-2 items-center">
+          <input type="text" class="form-control" placeholder="Buscar por cliente..." id="invoiceSearch" style="width:200px">
+          <select class="form-control" id="invoiceStatusFilter" style="width:auto">
+            <option value="">Todos los estados</option>
+            <option value="borrador">Borrador</option>
+            <option value="pagada">Pagada</option>
+            <option value="anulada">Anulada</option>
+          </select>
+          <input type="date" class="form-control" id="invoiceDateFrom" style="width:auto" title="Desde">
+          <input type="date" class="form-control" id="invoiceDateTo" style="width:auto" title="Hasta">
+        </div>
       </div>
       <div id="invoiceActive" class="hidden"></div>
       <div id="invoiceList"></div>
     `;
 
+    document.getElementById('invoiceSearch').addEventListener('input', () => this.applyFilters());
+    document.getElementById('invoiceStatusFilter').addEventListener('change', () => this.applyFilters());
+    document.getElementById('invoiceDateFrom').addEventListener('change', () => this.applyFilters());
+    document.getElementById('invoiceDateTo').addEventListener('change', () => this.applyFilters());
+
+    this.renderFacturaList();
+  },
+
+  applyFilters() {
+    const search = (document.getElementById('invoiceSearch')?.value || '').toLowerCase();
+    const status = document.getElementById('invoiceStatusFilter')?.value || '';
+    const dateFrom = document.getElementById('invoiceDateFrom')?.value || '';
+    const dateTo = document.getElementById('invoiceDateTo')?.value || '';
+
+    this.filteredFacturas = this.allFacturas.filter(f => {
+      if (status && f.estado !== status) return false;
+      if (dateFrom && f.createdAt && f.createdAt.substring(0, 10) < dateFrom) return false;
+      if (dateTo && f.createdAt && f.createdAt.substring(0, 10) > dateTo) return false;
+      if (search) {
+        const clienteName = f.cliente ? (f.cliente.nombre || '').toLowerCase() : '';
+        const clienteCom = f.cliente ? (f.cliente.nombreComercial || '').toLowerCase() : '';
+        if (!clienteName.includes(search) && !clienteCom.includes(search) && !(f.numero || '').toLowerCase().includes(search)) {
+          return false;
+        }
+      }
+      return true;
+    });
     this.renderFacturaList();
   },
 
@@ -203,7 +274,8 @@ const Invoice = {
     const listContainer = document.getElementById('invoiceList');
     if (!listContainer) return;
 
-    const recentes = this.allFacturas.slice(0, 50);
+    const data = this.filteredFacturas || this.allFacturas;
+    const recentes = data.slice(0, 100);
 
     UI.renderTable('invoiceList', [
       { label: '#', key: 'numero', width: '80px' },
@@ -225,11 +297,12 @@ const Invoice = {
             <button class="btn btn-ghost btn-sm" onclick="PdfGenerator.printReceipt('${row.id}')" title="Imprimir">🖨️</button>
             <button class="btn btn-ghost btn-sm" onclick="PdfGenerator.generateAndDownload('${row.id}')" title="PDF">📄</button>
             <button class="btn btn-ghost btn-sm" onclick="WhatsAppShare.share('${row.id}')" title="WhatsApp">📱</button>
+            <button class="btn btn-ghost btn-sm" onclick="Invoice.annul('${row.id}')" title="Anular" style="color:var(--danger)">🚫</button>
           ` : ''}
-          ${Operadores.isAdmin() ? `
+          ${row.estado !== 'anulada' && Operadores.isAdmin() ? `
             <button class="btn btn-ghost btn-sm" onclick="Invoice.confirmDelete('${row.id}')" title="Eliminar">🗑️</button>
           ` : ''}
-        </div>`
+       </div>`
     }], recentes, {
       emptyText: 'No hay facturas registradas',
       emptyAction: "Invoice.showNewInvoice()",
@@ -591,8 +664,8 @@ const Invoice = {
     products.forEach(p => {
       const cat = Categories.items.find(c => c.id === p.categoriaId);
       productsHtml += `
-        <div class="flex items-center justify-between" style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer"
-          onclick="Invoice.pickProduct('${p.id}')">
+        <div class="flex items-center justify-between product-picker-item" style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer"
+          data-product-id="${p.id}">
           <div>
             <div class="font-bold">${UI.escapeHtml(p.descripcion)}</div>
             <div class="text-muted" style="font-size:11px">
@@ -614,7 +687,7 @@ const Invoice = {
       <div class="search-box mb-3" style="max-width:100%">
         <span class="icon">🔍</span>
         <input type="text" class="form-control" placeholder="Buscar producto..." id="productSearchInput"
-          oninput="Invoice.filterProducts(this.value)" style="padding-left:36px">
+          style="padding-left:36px">
       </div>
       <div id="productPickerList" style="max-height:400px;overflow-y:auto">
         ${productsHtml}
@@ -622,6 +695,27 @@ const Invoice = {
     `;
 
     UI.showModal('Agregar Producto', content, { footer: false, size: 'lg' });
+
+    const searchInput = document.getElementById('productSearchInput');
+    if (searchInput) {
+      const debouncedFilter = Utils.debounce((val) => Invoice.filterProducts(val), 250);
+      searchInput.addEventListener('input', (e) => debouncedFilter(e.target.value));
+    }
+
+    const pickerList = document.getElementById('productPickerList');
+    if (pickerList) {
+      pickerList.addEventListener('click', (e) => {
+        const item = e.target.closest('.product-picker-item');
+        if (item) {
+          Invoice.pickProduct(item.dataset.productId);
+          return;
+        }
+        const createBtn = e.target.closest('.create-product-btn');
+        if (createBtn) {
+          Invoice.createProductFromPicker(createBtn.dataset.query);
+        }
+      });
+    }
   },
 
   filterProducts(query) {
@@ -632,6 +726,7 @@ const Invoice = {
       const catName = cat ? cat.nombre.toLowerCase() : '';
       return p.descripcion.toLowerCase().includes(q) ||
         (p.tipo && p.tipo.toLowerCase().includes(q)) ||
+        (p.codigoBarras && p.codigoBarras.toLowerCase().includes(q)) ||
         catName.includes(q);
     });
 
@@ -639,8 +734,8 @@ const Invoice = {
     products.forEach(p => {
       const cat = Categories.items.find(c => c.id === p.categoriaId);
       html += `
-        <div class="flex items-center justify-between" style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer"
-          onclick="Invoice.pickProduct('${p.id}')">
+        <div class="flex items-center justify-between product-picker-item" style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer"
+          data-product-id="${p.id}">
           <div>
             <div class="font-bold">${UI.escapeHtml(p.descripcion)}</div>
             <div class="text-muted" style="font-size:11px">
@@ -654,10 +749,11 @@ const Invoice = {
     });
 
     if (products.length === 0) {
+      const escapedQuery = Utils.escapeHtml(query);
       html = `
         <div class="text-center" style="padding:20px">
-          <p class="text-muted mb-2">No se encontraron productos para "${UI.escapeHtml(query)}"</p>
-          <button class="btn btn-primary btn-sm" onclick="Invoice.createProductFromPicker('${UI.escapeHtml(query)}')">+ Crear producto "${UI.escapeHtml(query)}"</button>
+          <p class="text-muted mb-2">No se encontraron productos para "${escapedQuery}"</p>
+          <button class="btn btn-primary btn-sm create-product-btn" data-query="${escapedQuery}">+ Crear producto "${escapedQuery}"</button>
         </div>`;
     }
 
@@ -753,5 +849,59 @@ const Invoice = {
     }
 
     await Storage.delete(STORES.facturas, id);
+    await Storage.log('factura_eliminar', `Factura #${factura.numero} eliminada`);
+  },
+
+  annul(id) {
+    const factura = this.allFacturas.find(f => f.id === id);
+    if (!factura) return;
+    if (factura.estado === 'anulada') {
+      UI.showToast('La factura ya está anulada', 'warning');
+      return;
+    }
+
+    Operadores.showAdminPinModal(async () => {
+      try {
+        const fac = await Storage.get(STORES.facturas, id);
+        if (!fac) throw new Error('Factura no encontrada');
+
+        if (fac.estado === 'pagada' && fac.items) {
+          for (const item of fac.items) {
+            try {
+              if (item.productoId) {
+                const product = await Storage.get(STORES.productos, item.productoId);
+                if (product) {
+                  await Inventory.update(item.productoId, {
+                    cantidadExistencia: product.cantidadExistencia + item.cantidad,
+                    salidas: Math.max(0, (product.salidas || 0) - item.cantidad)
+                  });
+                }
+              } else {
+                const existentes = await Storage.searchProducts(item.descripcion);
+                if (existentes.length > 0) {
+                  const product = existentes[0];
+                  await Inventory.update(product.id, {
+                    cantidadExistencia: product.cantidadExistencia + item.cantidad,
+                    salidas: Math.max(0, (product.salidas || 0) - item.cantidad)
+                  });
+                }
+              }
+            } catch (e) {
+              console.warn('Error revirtiendo stock:', item.descripcion, e);
+            }
+          }
+        }
+
+        fac.estado = 'anulada';
+        fac.updatedAt = Utils.getNow();
+        await Storage.update(STORES.facturas, fac);
+        await Storage.log('factura_anular', `Factura #${fac.numero} anulada - Total: ${Utils.formatCurrency(fac.total)}`);
+        await this.load();
+        UI.showToast('Factura anulada', 'success');
+        this.renderFacturaList();
+      } catch (e) {
+        UI.showToast('Error: ' + e.message, 'error');
+      }
+    });
   }
 };

@@ -26,6 +26,7 @@ const CashRegister = {
     };
 
     await Storage.add(STORES.caja, caja);
+    await Storage.log('caja_abrir', `Caja abierta con ${Utils.formatCurrency(caja.montoApertura)}`);
     this.currentCaja = caja;
     UI.renderCashStatus(caja);
     return caja;
@@ -58,6 +59,7 @@ const CashRegister = {
     this.currentCaja.observaciones = observaciones || '';
 
     await Storage.update(STORES.caja, this.currentCaja);
+    await Storage.log('caja_cerrar', `Caja cerrada - Esperado: ${Utils.formatCurrency(montoEsperado)} - Contado: ${Utils.formatCurrency(this.currentCaja.montoCierre)} - Diferencia: ${Utils.formatCurrency(this.currentCaja.diferencia)}`);
     const closed = { ...this.currentCaja };
     this.currentCaja = null;
     UI.renderCashStatus(null);

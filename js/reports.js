@@ -1,18 +1,88 @@
 const Reports = {
+  _dateFrom: '',
+  _dateTo: '',
+
   async renderPage() {
     const container = document.getElementById('reportsContent');
     if (!container) return;
 
     const today = Utils.getToday();
-    const facturas = await Storage.getAll(STORES.facturas);
-    const productos = await Storage.getAll(STORES.productos);
-    const todayFacturas = facturas.filter(f => f.createdAt && f.createdAt.startsWith(today));
-    const pagadas = todayFacturas.filter(f => f.estado === 'pagada');
+    this._dateFrom = '';
+    this._dateTo = '';
 
-    let totalVentasHoy = 0;
+    container.innerHTML = `
+      <div class="flex items-center justify-between mb-4">
+        <div class="tabs mb-0" style="margin-bottom:0">
+          <div class="tab-item active" onclick="Reports.showTab('resumen', this)">Resumen</div>
+          <div class="tab-item" onclick="Reports.showTab('comprasventas', this)">Compras vs Ventas</div>
+          <div class="tab-item" onclick="Reports.showTab('flujo', this)">Flujo de Efectivo</div>
+          <div class="tab-item" onclick="Reports.showTab('bitacora', this)">Bitácora</div>
+        </div>
+        <div class="flex gap-2 items-center">
+          <label class="form-label mb-0" style="white-space:nowrap">Período:</label>
+          <input type="date" class="form-control" id="reportDateFrom" style="width:auto" title="Desde">
+          <span>-</span>
+          <input type="date" class="form-control" id="reportDateTo" style="width:auto" title="Hasta">
+          <button class="btn btn-outline btn-sm" onclick="Reports.clearDateFilter()">Limpiar</button>
+        </div>
+      </div>
+      <div id="reportContentArea"></div>
+    `;
+
+    document.getElementById('reportDateFrom').addEventListener('change', (e) => {
+      this._dateFrom = e.target.value;
+      this.renderActiveTab();
+    });
+    document.getElementById('reportDateTo').addEventListener('change', (e) => {
+      this._dateTo = e.target.value;
+      this.renderActiveTab();
+    });
+
+    this.renderActiveTab();
+  },
+
+  clearDateFilter() {
+    this._dateFrom = '';
+    this._dateTo = '';
+    const fromEl = document.getElementById('reportDateFrom');
+    const toEl = document.getElementById('reportDateTo');
+    if (fromEl) fromEl.value = '';
+    if (toEl) toEl.value = '';
+    this.renderActiveTab();
+  },
+
+  renderActiveTab() {
+    const activeTab = document.querySelector('.tabs .tab-item.active');
+    if (!activeTab) return;
+    const tabText = activeTab.textContent.trim();
+    if (tabText === 'Resumen') this.renderResumen();
+    else if (tabText === 'Compras vs Ventas') this.renderComprasVentas();
+    else if (tabText === 'Flujo de Efectivo') this.renderFlujoEfectivo();
+  },
+
+  filterByDate(items, dateField = 'createdAt') {
+    if (!this._dateFrom && !this._dateTo) return items;
+    return items.filter(item => {
+      const dateVal = (item[dateField] || '').substring(0, 10);
+      if (this._dateFrom && dateVal < this._dateFrom) return false;
+      if (this._dateTo && dateVal > this._dateTo) return false;
+      return true;
+    });
+  },
+
+  async renderResumen() {
+    const area = document.getElementById('reportContentArea');
+    if (!area) return;
+
+    const allFacturas = await Storage.getAll(STORES.facturas);
+    const productos = await Storage.getAll(STORES.productos);
+    const facturas = this.filterByDate(allFacturas);
+    const pagadas = facturas.filter(f => f.estado === 'pagada');
+
+    let totalVentas = 0;
     let efectivo = 0, transferencia = 0, pagomovil = 0, otros = 0;
     pagadas.forEach(f => {
-      totalVentasHoy += f.total || 0;
+      totalVentas += f.total || 0;
       if (f.pagos) {
         f.pagos.forEach(p => {
           const monto = parseFloat(p.monto) || 0;
@@ -42,20 +112,16 @@ const Reports = {
       .sort((a, b) => b.total - a.total)
       .slice(0, 10);
 
-    container.innerHTML = `
-      <div class="tabs mb-4">
-        <div class="tab-item active" onclick="Reports.showTab('resumen', this)">Resumen del Día</div>
-        <div class="tab-item" onclick="Reports.showTab('comprasventas', this)">Compras vs Ventas</div>
-        <div class="tab-item" onclick="Reports.showTab('flujo', this)">Flujo de Efectivo</div>
-      </div>
+    const dateLabel = this._dateFrom || this._dateTo ?
+      ` (${this._dateFrom || '...'} al ${this._dateTo || '...'})` : ' (Hoy)';
 
-      <div id="tab-resumen">
-        <div class="grid grid-4 mb-4">
+    area.innerHTML = `
+      <div class="grid grid-4 mb-4">
         <div class="stat-card">
           <div class="stat-icon green">💰</div>
           <div class="stat-info">
-            <h3>${Utils.formatCurrency(totalVentasHoy)}</h3>
-            <p>Ventas Hoy</p>
+            <h3>${Utils.formatCurrency(totalVentas)}</h3>
+            <p>Ventas${dateLabel}</p>
           </div>
         </div>
         <div class="stat-card">
@@ -83,7 +149,7 @@ const Reports = {
 
       <div class="grid grid-2">
         <div class="card">
-          <div class="card-header"><h3>Resumen de Pagos Hoy</h3></div>
+          <div class="card-header"><h3>Resumen de Pagos</h3></div>
           <div class="card-body">
             <div class="table-wrapper">
               <table class="table">
@@ -93,7 +159,7 @@ const Reports = {
                   <tr><td>Transferencia</td><td class="text-right font-bold">${Utils.formatCurrency(transferencia)}</td></tr>
                   <tr><td>Pago Móvil</td><td class="text-right font-bold">${Utils.formatCurrency(pagomovil)}</td></tr>
                   <tr><td>Otros</td><td class="text-right font-bold">${Utils.formatCurrency(otros)}</td></tr>
-                  <tr style="background:var(--bg-body)"><td class="font-bold">TOTAL</td><td class="text-right font-bold text-success">${Utils.formatCurrency(totalVentasHoy)}</td></tr>
+                  <tr style="background:var(--bg-body)"><td class="font-bold">TOTAL</td><td class="text-right font-bold text-success">${Utils.formatCurrency(totalVentas)}</td></tr>
                 </tbody>
               </table>
             </div>
@@ -101,10 +167,10 @@ const Reports = {
         </div>
 
         <div class="card">
-          <div class="card-header"><h3>Productos Más Vendidos (Hoy)</h3></div>
+          <div class="card-header"><h3>Productos Más Vendidos</h3></div>
           <div class="card-body">
             ${topProducts.length === 0 ?
-              '<div class="empty-state"><p>No hay ventas registradas hoy</p></div>' :
+              '<div class="empty-state"><p>No hay ventas en este período</p></div>' :
               `<div class="table-wrapper">
                 <table class="table">
                   <thead><tr><th>Producto</th><th class="text-center">Cant.</th><th class="text-right">Total</th></tr></thead>
@@ -156,28 +222,8 @@ const Reports = {
           <div id="reportsFacturasTable"></div>
         </div>
       </div>
-      </div>
-
-      <div id="tab-comprasventas" class="hidden">
-        <div class="card">
-          <div class="card-header"><h3>Compras vs Ventas por Mes</h3></div>
-          <div class="card-body">
-            <div id="reportsComprasVentas"></div>
-          </div>
-        </div>
-      </div>
-
-      <div id="tab-flujo" class="hidden">
-        <div class="card">
-          <div class="card-header"><h3>Flujo de Efectivo (Últimos 30 días)</h3></div>
-          <div class="card-body">
-            <div id="reportsFlujoEfectivo"></div>
-          </div>
-        </div>
-      </div>
     `;
 
-    const recentFacturas = facturas.slice(0, 100);
     UI.renderTable('reportsFacturasTable', [
       { label: '#', key: 'numero', width: '70px' },
       { label: 'Cliente', render: (row) => row.cliente ? UI.escapeHtml(row.cliente.nombre || 'Detal') : 'Detal' },
@@ -194,20 +240,17 @@ const Reports = {
             <button class="btn btn-ghost btn-sm" onclick="PdfGenerator.generateAndDownload('${row.id}')" title="PDF">📄</button>
           ` : ''}
         </div>`
-    }], recentFacturas, { emptyText: 'No hay facturas registradas' });
+    }], facturas.slice(0, 100), { emptyText: 'No hay facturas en este período' });
   },
 
   showTab(tab, el) {
     document.querySelectorAll('.tabs .tab-item').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
 
-    ['resumen', 'comprasventas', 'flujo'].forEach(t => {
-      const section = document.getElementById(`tab-${t}`);
-      if (section) section.classList.toggle('hidden', t !== tab);
-    });
-
-    if (tab === 'comprasventas') this.renderComprasVentas();
-    if (tab === 'flujo') this.renderFlujoEfectivo();
+    if (tab === 'resumen') this.renderResumen();
+    else if (tab === 'comprasventas') this.renderComprasVentas();
+    else if (tab === 'flujo') this.renderFlujoEfectivo();
+    else if (tab === 'bitacora') this.renderBitacora();
   },
 
   async exportFacturas() {
@@ -234,11 +277,13 @@ const Reports = {
   },
 
   async renderComprasVentas() {
-    const container = document.getElementById('reportsComprasVentas');
-    if (!container) return;
+    const area = document.getElementById('reportContentArea');
+    if (!area) return;
 
-    const facturas = await Storage.getAll(STORES.facturas);
-    const compras = await Storage.getAll(STORES.compras);
+    const allFacturas = await Storage.getAll(STORES.facturas);
+    const allCompras = await Storage.getAll(STORES.compras);
+    const facturas = this.filterByDate(allFacturas);
+    const compras = this.filterByDate(allCompras, 'fecha');
     const pagadas = facturas.filter(f => f.estado === 'pagada');
 
     const meses = {};
@@ -266,7 +311,8 @@ const Reports = {
 
     const sortedMeses = Object.entries(meses).sort((a, b) => b[0].localeCompare(a[0]));
 
-    let html = '<div class="table-wrapper"><table class="table">';
+    let html = '<div class="card"><div class="card-header"><h3>Compras vs Ventas por Mes</h3></div><div class="card-body">';
+    html += '<div class="table-wrapper"><table class="table">';
     html += '<thead><tr><th>Mes</th><th class="text-right">Ventas ($)</th><th class="text-center"># Ventas</th><th class="text-right">Compras ($)</th><th class="text-center"># Compras</th><th class="text-right">Utilidad</th></tr></thead><tbody>';
 
     let totalGeneralVentas = 0, totalGeneralCompras = 0;
@@ -297,28 +343,32 @@ const Reports = {
         <td class="text-right ${utilidadTotal >= 0 ? 'text-success' : 'text-danger'}">${Utils.formatCurrency(utilidadTotal)}</td>
       </tr>`;
 
-    html += '</tbody></table></div>';
+    html += '</tbody></table></div></div></div>';
 
     if (sortedMeses.length === 0) {
       html = '<div class="empty-state"><p>No hay datos de compras o ventas para comparar</p></div>';
     }
 
-    container.innerHTML = html;
+    area.innerHTML = html;
   },
 
   async renderFlujoEfectivo() {
-    const container = document.getElementById('reportsFlujoEfectivo');
-    if (!container) return;
+    const area = document.getElementById('reportContentArea');
+    if (!area) return;
 
     const caja = await Storage.getAll(STORES.caja);
-    const facturas = await Storage.getAll(STORES.facturas);
-    const compras = await Storage.getAll(STORES.compras);
+    const allFacturas = await Storage.getAll(STORES.facturas);
+    const allCompras = await Storage.getAll(STORES.compras);
+    const facturas = this.filterByDate(allFacturas);
+    const compras = this.filterByDate(allCompras, 'fecha');
     const pagadas = facturas.filter(f => f.estado === 'pagada');
 
     const dias = {};
 
     caja.forEach(c => {
       const dia = c.fecha;
+      if (this._dateFrom && dia < this._dateFrom) return;
+      if (this._dateTo && dia > this._dateTo) return;
       if (!dias[dia]) dias[dia] = { apertura: 0, cierre: 0, estado: c.estado, efectivoVentas: 0, otrosPagos: 0, efectivoCompras: 0, otrosCompras: 0 };
       if (c.estado === 'abierta') {
         dias[dia].apertura = c.montoApertura;
@@ -346,9 +396,10 @@ const Reports = {
       else dias[dia].otrosCompras += c.total || 0;
     });
 
-    const sortedDias = Object.entries(dias).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 30);
+    const sortedDias = Object.entries(dias).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 100);
 
-    let html = '<div class="table-wrapper"><table class="table">';
+    let html = '<div class="card"><div class="card-header"><h3>Flujo de Efectivo</h3></div><div class="card-body">';
+    html += '<div class="table-wrapper"><table class="table">';
     html += '<thead><tr><th>Fecha</th><th class="text-right">Apertura</th><th class="text-right">Efectivo Ventas</th><th class="text-right">Otros Pagos</th><th class="text-right">Efectivo Compras</th><th class="text-right">Otros Gastos</th><th class="text-right">Saldo Neto</th></tr></thead><tbody>';
 
     let totalApertura = 0, totalEfVentas = 0, totalOtros = 0, totalEfCompras = 0, totalOtrosC = 0;
@@ -385,12 +436,52 @@ const Reports = {
         <td class="text-right ${saldoTotal >= 0 ? 'text-success' : 'text-danger'}">${Utils.formatCurrency(saldoTotal)}</td>
       </tr>`;
 
-    html += '</tbody></table></div>';
+    html += '</tbody></table></div></div></div>';
 
     if (sortedDias.length === 0) {
       html = '<div class="empty-state"><p>No hay datos de caja para generar el flujo de efectivo</p></div>';
     }
 
-    container.innerHTML = html;
+    area.innerHTML = html;
+  },
+
+  async renderBitacora() {
+    const area = document.getElementById('reportContentArea');
+    if (!area) return;
+
+    const allLogs = await Storage.getAll(STORES.bitacora);
+    const logs = this.filterByDate(allLogs).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')).slice(0, 200);
+
+    const accionLabels = {
+      'caja_abrir': 'Caja Abierta',
+      'caja_cerrar': 'Caja Cerrada',
+      'factura_guardar': 'Factura Guardada',
+      'factura_anular': 'Factura Anulada',
+      'factura_eliminar': 'Factura Eliminada',
+      'compra_registrar': 'Compra Registrada',
+      'compra_eliminar': 'Compra Eliminada'
+    };
+
+    let html = '<div class="card"><div class="card-header"><h3>Bitácora de Auditoría</h3></div><div class="card-body">';
+    html += '<div class="table-wrapper"><table class="table">';
+    html += '<thead><tr><th>Fecha/Hora</th><th>Acción</th><th>Detalle</th><th>Operador</th></tr></thead><tbody>';
+
+    logs.forEach(log => {
+      html += `
+        <tr>
+          <td style="font-size:12px">${Utils.formatDateTime(log.fecha)}</td>
+          <td><span class="badge badge-info">${accionLabels[log.accion] || log.accion}</span></td>
+          <td style="font-size:12px">${UI.escapeHtml(log.detalle || '')}</td>
+          <td style="font-size:12px">${UI.escapeHtml(log.operadorNombre || '')}</td>
+        </tr>`;
+    });
+
+    html += '</tbody></table></div></div></div>';
+
+    if (logs.length === 0) {
+      html = '<div class="empty-state"><p>No hay registros de auditoría</p></div>';
+    }
+
+    area.innerHTML = html;
   }
 };

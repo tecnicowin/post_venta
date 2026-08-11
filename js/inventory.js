@@ -15,6 +15,7 @@ const Inventory = {
       descripcion: data.descripcion,
       categoriaId: data.categoriaId || '',
       tipo: data.tipo || '',
+      codigoBarras: data.codigoBarras || '',
       cantidadExistencia: parseFloat(data.cantidadExistencia) || 0,
       stockMinimo: parseFloat(data.stockMinimo) || 0,
       entradas: parseFloat(data.entradas) || 0,
@@ -39,6 +40,7 @@ const Inventory = {
     const updated = {
       ...existing,
       ...data,
+      codigoBarras: data.codigoBarras !== undefined ? data.codigoBarras : existing.codigoBarras,
       cantidadExistencia: parseFloat(data.cantidadExistencia) || existing.cantidadExistencia,
       stockMinimo: parseFloat(data.stockMinimo) || 0,
       costoCompra: parseFloat(data.costoCompra) || existing.costoCompra || 0,
@@ -151,6 +153,7 @@ const Inventory = {
       { label: 'Descripción', key: 'descripcion', render: (row) => `
         <div>
           <div class="font-bold">${UI.escapeHtml(row.descripcion)}</div>
+          ${row.codigoBarras ? `<div class="text-muted" style="font-size:10px">Barcode: ${UI.escapeHtml(row.codigoBarras)}</div>` : ''}
           ${row.tipo ? `<div class="text-muted" style="font-size:11px">${UI.escapeHtml(row.tipo)}</div>` : ''}
         </div>`
       },
@@ -217,6 +220,10 @@ const Inventory = {
           </div>
         </div>
         <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Código de Barras</label>
+            <input type="text" class="form-control" name="codigoBarras" value="${product ? UI.escapeHtml(product.codigoBarras || '') : ''}" placeholder="SKU o código de barras">
+          </div>
           <div class="form-group">
             <label class="form-label">Categoría</label>
             <select class="form-control" name="categoriaId" id="productCategory">

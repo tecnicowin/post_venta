@@ -1,9 +1,35 @@
 const Operadores = {
   items: [],
   current: null,
+  SESSION_DURATION: 8 * 60 * 60 * 1000,
+  MAX_LOGIN_ATTEMPTS: 5,
+  LOCKOUT_DURATION: 5 * 60 * 1000,
+
+  async hashPin(pin) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(String(pin));
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  },
+
+  async migratePlaintextPins() {
+    let changed = false;
+    for (const op of this.items) {
+      if (!op.pinHashed) {
+        op.pin = await this.hashPin(op.pin);
+        op.pinHashed = true;
+        op.updatedAt = Utils.getNow();
+        await Storage.update(STORES.operadores, op);
+        changed = true;
+      }
+    }
+    if (changed) await this.load();
+  },
 
   async load() {
     this.items = await Storage.getAll(STORES.operadores);
+    await this.migratePlaintextPins();
     this.current = this.loadSession();
   },
 
@@ -12,19 +38,53 @@ const Operadores = {
     if (!data) return null;
     try {
       const parsed = JSON.parse(data);
+      if (parsed.expires && Date.now() > parsed.expires) {
+        localStorage.removeItem('pdv_operator');
+        return null;
+      }
       const op = this.items.find(o => o.id === parsed.id && o.activo);
       return op || null;
     } catch { return null; }
   },
 
   saveSession(operator) {
-    localStorage.setItem('pdv_operator', JSON.stringify({ id: operator.id }));
+    localStorage.setItem('pdv_operator', JSON.stringify({
+      id: operator.id,
+      expires: Date.now() + this.SESSION_DURATION
+    }));
     this.current = operator;
   },
 
   logout() {
     localStorage.removeItem('pdv_operator');
     this.current = null;
+  },
+
+  getLoginAttempts() {
+    return parseInt(localStorage.getItem('pdv_loginAttempts') || '0');
+  },
+
+  incrementLoginAttempts() {
+    const attempts = this.getLoginAttempts() + 1;
+    localStorage.setItem('pdv_loginAttempts', String(attempts));
+    if (attempts >= this.MAX_LOGIN_ATTEMPTS) {
+      localStorage.setItem('pdv_lockUntil', String(Date.now() + this.LOCKOUT_DURATION));
+    }
+    return attempts;
+  },
+
+  resetLoginAttempts() {
+    localStorage.removeItem('pdv_loginAttempts');
+    localStorage.removeItem('pdv_lockUntil');
+  },
+
+  isLocked() {
+    const lockUntil = parseInt(localStorage.getItem('pdv_lockUntil') || '0');
+    if (Date.now() < lockUntil) {
+      const remaining = Math.ceil((lockUntil - Date.now()) / 60000);
+      return { locked: true, remaining };
+    }
+    return { locked: false };
   },
 
   isLoggedIn() {
@@ -42,14 +102,16 @@ const Operadores = {
   },
 
   async add(data) {
-    const existente = this.items.find(o => o.pin === data.pin && o.activo);
+    const hashedPin = await this.hashPin(data.pin);
+    const existente = this.items.find(o => o.pin === hashedPin && o.activo);
     if (existente) {
       throw new Error(`Ya existe un operador con ese PIN: ${existente.nombre}`);
     }
     const operador = {
       id: Utils.generateId(),
       nombre: data.nombre || '',
-      pin: data.pin || '',
+      pin: hashedPin,
+      pinHashed: true,
       rol: data.rol || 'operador',
       activo: true,
       createdAt: Utils.getNow(),
@@ -64,8 +126,11 @@ const Operadores = {
     const existing = await Storage.get(STORES.operadores, id);
     if (!existing) throw new Error('Operador no encontrado');
     if (data.pin && data.pin !== existing.pin) {
-      const duplicado = this.items.find(o => o.pin === data.pin && o.id !== id && o.activo);
+      const hashedPin = await this.hashPin(data.pin);
+      const duplicado = this.items.find(o => o.pin === hashedPin && o.id !== id && o.activo);
       if (duplicado) throw new Error('Ya existe otro operador con ese PIN');
+      data.pin = hashedPin;
+      data.pinHashed = true;
     }
     const updated = { ...existing, ...data, updatedAt: Utils.getNow() };
     await Storage.update(STORES.operadores, updated);
@@ -87,12 +152,14 @@ const Operadores = {
   },
 
   async validatePin(pin) {
-    const operador = this.items.find(o => o.pin === pin && o.activo);
+    const hashedPin = await this.hashPin(pin);
+    const operador = this.items.find(o => o.pin === hashedPin && o.activo);
     return operador || null;
   },
 
   async validateAdminPin(pin) {
-    const operador = this.items.find(o => o.pin === pin && o.rol === 'admin' && o.activo);
+    const hashedPin = await this.hashPin(pin);
+    const operador = this.items.find(o => o.pin === hashedPin && o.rol === 'admin' && o.activo);
     return operador || null;
   },
 
@@ -115,7 +182,7 @@ const Operadores = {
 
     UI.renderTable('operadoresTable', [
       { label: 'Nombre', render: (row) => `<div class="font-bold">${UI.escapeHtml(row.nombre)}</div>` },
-      { label: 'PIN', render: (row) => '•'.repeat(row.pin.length) },
+      { label: 'PIN', render: (row) => '••••' },
       { label: 'Rol', align: 'center', render: (row) => {
         return `<span class="badge badge-${row.rol === 'admin' ? 'success' : 'info'}">${row.rol === 'admin' ? 'Administrador' : 'Operador'}</span>`;
       }},
@@ -203,18 +270,23 @@ const Operadores = {
   },
 
   showLogin() {
+    const lockInfo = this.isLocked();
+    const lockMsg = lockInfo.locked ? `<div class="alert alert-danger mb-3">Cuenta bloqueada. Espera ${lockInfo.remaining} min.</div>` : '';
+
     const content = `
       <div class="text-center" style="padding:20px 0">
         <div style="font-size:48px;margin-bottom:16px">🔐</div>
         <h2 style="margin-bottom:8px">Iniciar Sesión</h2>
         <p class="text-muted mb-4">Ingresa tu PIN para acceder al sistema</p>
+        ${lockMsg}
         <form id="loginForm" onsubmit="Operadores.processLogin(event)">
           <div class="form-group" style="max-width:200px;margin:0 auto">
             <input type="password" class="form-control text-center" id="loginPin" placeholder="PIN"
-              style="font-size:24px;letter-spacing:8px;padding:12px" autofocus maxlength="6" inputmode="numeric" pattern="[0-9]*">
+              style="font-size:24px;letter-spacing:8px;padding:12px" autofocus maxlength="6" inputmode="numeric" pattern="[0-9]*"
+              ${lockInfo.locked ? 'disabled' : ''}>
           </div>
           <div id="loginError" style="color:var(--danger);margin-top:8px;min-height:20px"></div>
-          <button type="submit" class="btn btn-primary btn-lg mt-3" style="min-width:200px">Ingresar</button>
+          <button type="submit" class="btn btn-primary btn-lg mt-3" style="min-width:200px" ${lockInfo.locked ? 'disabled' : ''}>Ingresar</button>
         </form>
       </div>
     `;
@@ -223,7 +295,7 @@ const Operadores = {
 
     setTimeout(() => {
       const pinInput = document.getElementById('loginPin');
-      if (pinInput) pinInput.focus();
+      if (pinInput && !lockInfo.locked) pinInput.focus();
     }, 300);
   },
 
@@ -232,6 +304,12 @@ const Operadores = {
     const pin = document.getElementById('loginPin').value.trim();
     const errorEl = document.getElementById('loginError');
 
+    const lockInfo = this.isLocked();
+    if (lockInfo.locked) {
+      errorEl.textContent = `Demasiados intentos. Espera ${lockInfo.remaining} min.`;
+      return;
+    }
+
     if (!pin) {
       errorEl.textContent = 'Ingresa tu PIN';
       return;
@@ -239,12 +317,19 @@ const Operadores = {
 
     const operador = await this.validatePin(pin);
     if (!operador) {
-      errorEl.textContent = 'PIN incorrecto';
+      const attempts = this.incrementLoginAttempts();
+      const remaining = this.MAX_LOGIN_ATTEMPTS - attempts;
+      if (remaining <= 0) {
+        errorEl.textContent = `Cuenta bloqueada por ${this.LOCKOUT_DURATION / 60000} minutos`;
+      } else {
+        errorEl.textContent = `PIN incorrecto. Quedan ${remaining} intentos`;
+      }
       document.getElementById('loginPin').value = '';
       document.getElementById('loginPin').focus();
       return;
     }
 
+    this.resetLoginAttempts();
     this.saveSession(operador);
     UI.closeModal();
     UI.showToast(`Bienvenido, ${operador.nombre}`, 'success');

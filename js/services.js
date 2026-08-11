@@ -122,11 +122,13 @@ const Services = {
   recalculate() {
     if (!this.currentService) return;
     const svc = this.currentService;
+    const iva16Rate = Config.get('iva16') || 0.16;
+    const iva10Rate = Config.get('iva10') || 0.10;
     let subtotal = 0, iva16 = 0, iva10 = 0;
     svc.items.forEach(item => {
       subtotal += item.totalPorRubro;
-      if (item.iva === '16') iva16 += item.totalPorRubro * 0.16;
-      else if (item.iva === '10') iva10 += item.totalPorRubro * 0.10;
+      if (item.iva === '16') iva16 += item.totalPorRubro * iva16Rate;
+      else if (item.iva === '10') iva10 += item.totalPorRubro * iva10Rate;
     });
     svc.subtotal = subtotal;
     const descMonto = subtotal * (svc.descuento / 100);
@@ -420,6 +422,8 @@ const Services = {
 
   recalcAll() {
     if (!this.currentService) return;
+    const iva16Rate = Config.get('iva16') || 0.16;
+    const iva10Rate = Config.get('iva10') || 0.10;
     let matSubtotal = 0, iva16 = 0, iva10 = 0;
     this.currentService.items.forEach(item => {
       const lt = item.precio * item.cantidad;
@@ -427,8 +431,8 @@ const Services = {
       item.totalLinea = lt - desc;
       item.totalPorRubro = item.totalLinea;
       matSubtotal += item.totalLinea;
-      if (item.iva === '16') iva16 += item.totalLinea * 0.16;
-      else if (item.iva === '10') iva10 += item.totalLinea * 0.10;
+      if (item.iva === '16') iva16 += item.totalLinea * iva16Rate;
+      else if (item.iva === '10') iva10 += item.totalLinea * iva10Rate;
     });
 
     const costoServ = parseFloat(document.querySelector('[name="costoServicio"]')?.value) || 0;
@@ -436,7 +440,7 @@ const Services = {
     const subtotal = matSubtotal + costoServ;
     const descMonto = subtotal * (descGlobal / 100);
     const baseImp = subtotal - descMonto;
-    const totalIva = iva16 + iva10 + (costoServ * 0.16);
+    const totalIva = iva16 + iva10 + (costoServ * iva16Rate);
     const total = baseImp + totalIva;
 
     this.currentService.costoServicio = costoServ;
