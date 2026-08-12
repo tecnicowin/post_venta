@@ -24,7 +24,14 @@
       "../js/**/*",
       "../assets/**/*",
       "../sw.js",
-      "../manifest.json"
+      "../manifest.json",
+      "!../tools/**",
+      "!../debug.html",
+      "!../PLAN.md",
+      "!../Sistema.txt",
+      "!../generate-icons.js",
+      "!../updates.json",
+      "!../.gitignore"
     ],
     "win": {
       "target": [
