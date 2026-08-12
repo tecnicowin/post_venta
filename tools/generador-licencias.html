@@ -165,15 +165,17 @@
 
     function copyToClipboard(text) {
       navigator.clipboard.writeText(text).then(() => {
-        alert('Clave copiada: ' + text);
+        alert('Clave copiada al portapapeles:\n' + text);
       }).catch(() => {
         const ta = document.createElement('textarea');
         ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
         document.body.appendChild(ta);
         ta.select();
         document.execCommand('copy');
         document.body.removeChild(ta);
-        alert('Clave copiada: ' + text);
+        alert('Clave copiada al portapapeles:\n' + text);
       });
     }
 

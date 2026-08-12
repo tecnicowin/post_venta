@@ -256,18 +256,18 @@ const License = {
       <div class="modal" style="max-width:450px">
         <div class="modal-header">
           <h3>🔑 Activar Licencia</h3>
-          <button class="modal-close" onclick="this.closest('.modal-bg').remove()">&times;</button>
+          <button class="modal-close" id="closeLicenseModal">&times;</button>
         </div>
         <div class="modal-body">
           <div class="form-group">
             <label class="form-label">Clave de Licencia</label>
-            <input type="text" class="form-control" id="licenseKeyInput" placeholder="PDV-PRO-XXXX-XXXX-XXXX-XXXX" style="text-transform:uppercase;font-family:monospace;font-size:14px" autocomplete="off">
+            <input type="text" class="form-control" id="licenseKeyInput" placeholder="PDV-PRO-XXXX-XXXX-XXXX-XXXX" style="text-transform:uppercase;font-family:monospace;font-size:14px" autocomplete="off" spellcheck="false">
             <div class="form-hint">Ejemplo: PDV-VIP-ABCD-1234-EFGH-5678</div>
           </div>
           <div id="licenseActivateMsg"></div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline" onclick="this.closest('.modal-bg').remove()">Cancelar</button>
+          <button class="btn btn-outline" id="cancelLicenseModal">Cancelar</button>
           <button class="btn btn-primary" id="btnActivateLicense">🔓 Activar</button>
         </div>
       </div>
@@ -275,17 +275,36 @@ const License = {
     document.body.appendChild(modal);
 
     const input = document.getElementById('licenseKeyInput');
-    input.focus();
+    const msgEl = document.getElementById('licenseActivateMsg');
+
+    document.getElementById('closeLicenseModal').addEventListener('click', () => modal.remove());
+    document.getElementById('cancelLicenseModal').addEventListener('click', () => modal.remove());
+
+    setTimeout(() => input.focus(), 100);
+
     input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') document.getElementById('btnActivateLicense').click();
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('btnActivateLicense').click();
+      }
+    });
+
+    input.addEventListener('paste', (e) => {
+      setTimeout(() => {
+        input.value = input.value.trim().toUpperCase().replace(/\s+/g, '');
+      }, 0);
     });
 
     document.getElementById('btnActivateLicense').addEventListener('click', async () => {
-      const clave = input.value.trim();
-      const msgEl = document.getElementById('licenseActivateMsg');
+      let clave = input.value;
+      if (!clave) {
+        clave = input.textContent || '';
+      }
+      clave = (clave || '').trim().toUpperCase().replace(/\s+/g, '');
 
       if (!clave) {
-        msgEl.innerHTML = '<div class="alert alert-danger mt-2"><span>⚠️</span><div>Ingresa una clave.</div></div>';
+        msgEl.innerHTML = '<div class="alert alert-danger mt-2"><span>⚠️</span><div>Ingresa una clave válida (ej: PDV-VIP-ABCD-1234-EFGH-5678)</div></div>';
+        input.focus();
         return;
       }
 
