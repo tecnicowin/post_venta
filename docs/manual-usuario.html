@@ -9,10 +9,12 @@
     body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; }
     .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
     
-    .cover { text-align: center; padding: 80px 20px; background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; border-radius: 16px; margin-bottom: 40px; }
-    .cover h1 { font-size: 36px; margin-bottom: 8px; }
-    .cover .subtitle { font-size: 18px; opacity: 0.9; }
-    .cover .version { margin-top: 20px; font-size: 14px; opacity: 0.7; }
+    .cover { text-align: center; padding: 0; background: #1e293b; color: white; border-radius: 16px; margin-bottom: 40px; overflow: hidden; position: relative; }
+    .cover img { width: 100%; height: auto; display: block; }
+    .cover-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 30px 20px; background: linear-gradient(transparent, rgba(0,0,0,0.8)); }
+    .cover h1 { font-size: 32px; margin-bottom: 4px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    .cover .subtitle { font-size: 16px; opacity: 0.9; }
+    .cover .version { margin-top: 8px; font-size: 13px; opacity: 0.7; }
     
     .toc { background: white; border-radius: 12px; padding: 32px; margin-bottom: 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .toc h2 { margin-bottom: 16px; color: #1e40af; }
@@ -68,10 +70,12 @@
   <div class="container">
 
     <div class="cover">
-      <div style="font-size:64px;margin-bottom:16px">🏪</div>
-      <h1>Punto de Venta</h1>
-      <div class="subtitle">Sistema de Facturación Profesional</div>
-      <div class="version">Manual de Usuario — Versión 1.0.0</div>
+      <img src="capturas/portada.jpg" alt="Punto de Venta - Sistema de Facturación" onerror="this.style.display='none'">
+      <div class="cover-overlay">
+        <h1>Manual de Usuario</h1>
+        <div class="subtitle">Sistema de Facturación Profesional</div>
+        <div class="version">Versión 1.0.0</div>
+      </div>
     </div>
 
     <div class="toc">
