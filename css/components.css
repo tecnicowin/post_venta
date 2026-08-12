@@ -16,10 +16,27 @@
   padding: 20px;
 }
 
+.modal-overlay.modal-bg,
+.modal-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-modal-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  padding: 20px;
+}
+
 .modal-overlay.modal-bg {
   z-index: 999;
   opacity: 0.5;
-  visibility: visible;
   pointer-events: none;
 }
 
