@@ -132,7 +132,7 @@ const License = {
 
   validateOffline(clave) {
     const parts = clave.split('-');
-    if (parts.length !== 5) return { ok: false, mensaje: 'Formato inválido.' };
+    if (parts.length !== 6) return { ok: false, mensaje: 'Formato inválido.' };
 
     const [prefix, tipo] = parts;
     if (prefix !== 'PDV') return { ok: false, mensaje: 'Prefijo inválido.' };
