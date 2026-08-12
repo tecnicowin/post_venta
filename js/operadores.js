@@ -335,6 +335,10 @@ const Operadores = {
     UI.showToast(`Bienvenido, ${operador.nombre}`, 'success');
     App.applyRoleAccess();
     App.renderDashboard();
+
+    if (operador.rol === 'admin' && operador.pin === '1234' && !localStorage.getItem('pdv_pin_changed')) {
+      setTimeout(() => this.promptChangeDefaultPin(), 1000);
+    }
   },
 
   showAdminPinModal(callback) {
@@ -385,5 +389,91 @@ const Operadores = {
       this._adminPinCallback();
       this._adminPinCallback = null;
     }
+  },
+
+  promptChangeDefaultPin() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-bg';
+    modal.innerHTML = `
+      <div class="modal" style="max-width:450px">
+        <div class="modal-header">
+          <h3>🔒 Cambiar PIN por Seguridad</h3>
+          <button class="modal-close" id="closeChangePin">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-warning mb-3">
+            <span>⚠️</span>
+            <div>Estás usando el PIN por defecto (<strong>1234</strong>). Por tu seguridad, debes cambiarlo.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">PIN Actual</label>
+            <input type="password" class="form-control text-center" id="currentPinInput" maxlength="4" inputmode="numeric" style="font-size:20px;letter-spacing:6px" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nuevo PIN (4 dígitos)</label>
+            <input type="password" class="form-control text-center" id="newPinInput" maxlength="4" inputmode="numeric" style="font-size:20px;letter-spacing:6px" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirmar Nuevo PIN</label>
+            <input type="password" class="form-control text-center" id="confirmPinInput" maxlength="4" inputmode="numeric" style="font-size:20px;letter-spacing:6px" autocomplete="off">
+          </div>
+          <div id="changePinMsg" style="min-height:20px;margin-top:8px"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" id="skipChangePin">Cambiar después</button>
+          <button class="btn btn-primary" id="saveNewPin">💾 Guardar PIN</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('closeChangePin').addEventListener('click', () => modal.remove());
+    document.getElementById('skipChangePin').addEventListener('click', () => {
+      localStorage.setItem('pdv_pin_changed', 'skipped');
+      modal.remove();
+    });
+
+    document.getElementById('saveNewPin').addEventListener('click', async () => {
+      const current = document.getElementById('currentPinInput').value.trim();
+      const newPin = document.getElementById('newPinInput').value.trim();
+      const confirm = document.getElementById('confirmPinInput').value.trim();
+      const msgEl = document.getElementById('changePinMsg');
+
+      if (!current || !newPin || !confirm) {
+        msgEl.innerHTML = '<div class="alert alert-danger"><span>⚠️</span><div>Completa todos los campos</div></div>';
+        return;
+      }
+      if (current !== '1234') {
+        msgEl.innerHTML = '<div class="alert alert-danger"><span>⚠️</span><div>PIN actual incorrecto</div></div>';
+        return;
+      }
+      if (newPin.length !== 4 || !/^\d+$/.test(newPin)) {
+        msgEl.innerHTML = '<div class="alert alert-danger"><span>⚠️</span><div>El PIN debe ser 4 dígitos numéricos</div></div>';
+        return;
+      }
+      if (newPin !== confirm) {
+        msgEl.innerHTML = '<div class="alert alert-danger"><span>⚠️</span><div>Los PINs no coinciden</div></div>';
+        return;
+      }
+      if (newPin === '1234') {
+        msgEl.innerHTML = '<div class="alert alert-danger"><span>⚠️</span><div>El nuevo PIN no puede ser 1234</div></div>';
+        return;
+      }
+
+      try {
+        const admin = this.items.find(op => op.rol === 'admin' && op.pin === '1234');
+        if (admin) {
+          const hashedPin = await this.hashPin(newPin);
+          await this.update(admin.id, { pin: hashedPin, pinHashed: true });
+          localStorage.setItem('pdv_pin_changed', 'true');
+          msgEl.innerHTML = '<div class="alert alert-success"><span>✅</span><div>PIN cambiado exitosamente. Recargando...</div></div>';
+          setTimeout(() => location.reload(), 1500);
+        }
+      } catch (e) {
+        msgEl.innerHTML = '<div class="alert alert-danger"><span>⚠️</span><div>Error al cambiar PIN</div></div>';
+      }
+    });
+
+    setTimeout(() => document.getElementById('currentPinInput')?.focus(), 200);
   }
 };

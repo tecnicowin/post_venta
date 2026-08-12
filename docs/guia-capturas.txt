@@ -1,0 +1,109 @@
+================================================================================
+          GUÍA DE CAPTURAS DE PANTALLA - MANUAL CON IMÁGENES
+================================================================================
+
+INSTRUCCIONES:
+  1. Abre la app Punto de Venta
+  2. Toma las capturas listadas abajo
+  3. Nombra cada archivo según se indica
+  4. Coloca las imágenes en la carpeta docs/capturas/
+  5. El manual HTML las referencia automáticamente
+
+================================================================================
+CAPTURAS NECESARIAS
+================================================================================
+
+CARPETA: docs/capturas/
+
+NOMBRE DEL ARCHIVO          │ PANTALLA A CAPTURAR
+────────────────────────────┼──────────────────────────────────────────────
+01-login.png                │ Pantalla de inicio de sesión (PIN)
+02-cambio-pin.png           │ Modal de "Cambiar PIN por Seguridad"
+03-dashboard.png            │ Dashboard principal con stats
+04-sidebar.png              │ Menú lateral completo
+05-configuracion.png        │ Página de configuración
+06-config-datos.png         │ Sección "Datos del Negocio"
+07-config-iva.png           │ Sección "IVA y Tasa del Dólar"
+08-config-impresora.png     │ Sección "Impresora USB"
+09-inventario.png           │ Lista de productos
+10-nuevo-producto.png       │ Formulario de nuevo producto
+11-categorias.png           │ Lista de categorías
+12-clientes.png             │ Lista de clientes
+13-nuevo-cliente.png        │ Formulario de nuevo cliente
+14-facturacion.png          │ Lista de facturas
+15-nueva-factura.png        │ Editor de factura (vacía)
+16-factura-productos.png    │ Editor con productos agregados
+17-factura-margen.png       │ Editando margen de ganancia
+18-seleccionar-producto.png │ Modal de selección de producto
+19-seleccionar-cliente.png  │ Modal de selección de cliente
+20-pago-modal.png           │ Modal de formas de pago
+21-factura-pagada.png       │ Factura confirmada (pagada)
+22-recibo.png               │ Vista previa del recibo
+23-caja-abierta.png         │ Caja en estado abierto
+24-abrir-caja.png           │ Modal de apertura de caja
+25-cerrar-caja.png          │ Modal de cierre de caja
+26-compras.png              │ Lista de compras
+27-nueva-compra.png         │ Formulario de nueva compra
+28-proveedores.png          │ Lista de proveedores
+29-servicios.png            │ Lista de órdenes de servicio
+30-nueva-servicio.png       │ Formulario de nueva orden
+31-reportes.png             │ Página de reportes
+32-report-diario.png        │ Reporte diario
+33-operadores.png           │ Lista de operadores
+34-nuevo-operador.png       │ Formulario de nuevo operador
+35-licencia-demo.png        │ Banner de modo demo
+36-licencia-activar.png     │ Modal de activar licencia
+37-licencia-activa.png      │ Licencia activada (empresa visible)
+
+================================================================================
+CÓMO TOMAR LAS CAPTURAS
+================================================================================
+
+WINDOWS:
+  - Presiona Win + Shift + S (recorte selectivo)
+  - O presiona Win + PrtSc (pantalla completa)
+
+NOMENCLATURA:
+  - Usa el nombre exacto indicado arriba
+  - Formato PNG
+  - Mayúsculas y guiones como se indica
+
+EJEMPLO:
+  01-login.png
+  03-dashboard.png
+  16-factura-productos.png
+
+================================================================================
+NOTAS PARA CADA SECCIÓN
+================================================================================
+
+1. LOGIN (01-login.png)
+   - Mostrar la pantalla de PIN
+   - NO mostrar el PIN digitado
+
+2. CAMBIO DE PIN (02-cambio-pin.png)
+   - Capturar el modal de advertencia
+   - Mostrar que pide PIN actual y nuevo
+
+3. DASHBOARD (03-dashboard.png)
+   - Mostrar stats (ventas, facturas, productos, stock bajo)
+   - Que se vea el banner de demo si aplica
+
+4. CONFIGURACIÓN (05-configuracion.png)
+   - Capturar toda la página scrolleando
+   - O hacer 3 capturas: datos, IVA, impresora
+
+5. FACTURACIÓN (15-17)
+   - Capturar editor vacío
+   - Luego con productos agregados
+   - Mostrar columna de margen visible
+
+6. PAGO (20-pago-modal.png)
+   - Mostrar las 7 formas de pago
+
+7. LICENCIA (35-37)
+   - Demo: mostrar banner
+   - Activar: modal con campo de clave
+   - Activa: mostrar nombre de empresa
+
+================================================================================

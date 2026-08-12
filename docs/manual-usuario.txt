@@ -1,0 +1,349 @@
+================================================================================
+                    MANUAL DE USUARIO - PUNTO DE VENTA
+                         Sistema de Facturación
+                           Versión 1.0.0
+================================================================================
+
+ÍNDICE
+------
+  1.  Primeros Pasos
+  2.  Inicio de Sesión
+  3.  Configuración del Negocio
+  4.  Gestión de Productos
+  5.  Categorías
+  6.  Gestión de Clientes
+  7.  Facturación
+  8.  Control de Caja
+  9.  Compras e Inventario
+  10. Proveedores
+  11. Órdenes de Servicio
+  12. Reportes
+  13. Operadores
+  14. Licencia y Actualizaciones
+  15. Respaldo de Datos
+  16. Preguntas Frecuentes
+
+================================================================================
+1. PRIMEROS PASOS
+================================================================================
+
+INSTALACIÓN:
+  1. Copia el archivo "PuntoDeVenta.exe" a la carpeta deseada
+  2. Ejecuta haciendo doble clic
+  3. Los datos se guardan automáticamente
+
+REQUISITOS:
+  - Windows 10 o superior
+  - 4GB de RAM mínimo
+  - 500MB de espacio libre
+  - Internet (opcional, solo para actualizaciones)
+
+================================================================================
+2. INICIO DE SESIÓN
+================================================================================
+
+Al abrir el sistema se solicita un PIN de 4 dígitos.
+
+  PIN por defecto: 1234 (Administrador)
+
+  ¡IMPORTANTE! Cambia el PIN inmediatamente después de iniciar sesión
+  por primera vez por seguridad.
+
+  PINs de operadores: Creados por el administrador
+
+================================================================================
+3. CONFIGURACIÓN DEL NEGOCIO
+================================================================================
+
+Ve a: ⚙️ Configuración
+
+DATOS DEL NEGOCIO:
+  - Nombre Comercial: Nombre de tu negocio
+  - RIF: Registro de identificación fiscal
+  - Teléfono: Número de contacto
+  - Dirección: Dirección del negocio
+
+CONFIGURACIÓN FISCAL:
+  - IVA 16%: Alícuota general (default: 0.16)
+  - IVA 10%: Alícuota reducida (default: 0.10)
+  - Margen General: % de ganancia default (default: 25%)
+  - Tasa del Dólar: Actualizar cada día antes de abrir caja
+
+HORARIO:
+  - Hora de Apertura: Cuando abre el negocio
+  - Hora de Cierre: Cuando cierra el negocio
+  - Días Laborables: Días de la semana que abres
+
+IMPRESORA:
+  - Conecta la impresora USB
+  - Configúrala como predeterminada en Windows
+  - Selecciona tamaño de papel (58mm o 80mm)
+  - Prueba con "Imprimir Prueba"
+
+================================================================================
+4. GESTIÓN DE PRODUCTOS
+================================================================================
+
+Ve a: 📦 Inventario → + Producto
+
+CAMPOS:
+  - Descripción: Nombre del producto (requerido)
+  - Categoría: Seleccionar categoría
+  - Código de Barras: SKU o código de barras
+  - Costo de Compra: Cuanto costó
+  - Margen de Ganancia: % de ganancia deseada
+  - Precio Mayorista: Para venta al mayor
+  - Precio Detal: Para venta al detal
+  - IVA: 16%, 10% o 0%
+  - Stock Mínimo: Alerta cuando llegue a esta cantidad
+
+FÓRMULA:
+  Precio Detal = Costo × (1 + Margen / 100)
+
+================================================================================
+5. CATEGORÍAS
+================================================================================
+
+Ve a: 📦 Inventario → + Categoría
+
+  - Nombre: Nombre de la categoría
+  - Color: Color para identificación visual
+  - Margen: % de ganancia para productos de esta categoría
+
+Las categorías ayudan a organizar y filtrar productos.
+
+================================================================================
+6. GESTIÓN DE CLIENTES
+================================================================================
+
+Ve a: 👥 Clientes → + Nuevo Cliente
+
+CAMPOS:
+  - Nombre (requerido)
+  - Apellido
+  - Nombre Comercial (empresa)
+  - Cédula / RIF
+  - Teléfono
+  - Email
+  - Dirección
+
+También puedes crear clientes desde la facturación.
+
+================================================================================
+7. FACTURACIÓN
+================================================================================
+
+Ve a: 📄 Facturación
+
+¡IMPORTANTE! Debes abrir la caja antes de facturar.
+
+CREAR FACTURA:
+  1. Click en "+ Nueva Factura"
+  2. Seleccionar cliente (Detal o personalizado)
+  3. Click en "+ Agregar Producto"
+  4. Seleccionar producto de la lista
+  5. Ajustar cantidad, precio y descuento
+  6. Seleccionar tipo: Detal o Mayor
+  7. Click en "✓ Confirmar Factura"
+  8. Seleccionar forma de pago
+  9. Confirmar el pago
+
+FORMAS DE PAGO:
+  - 💰 Efectivo ($)
+  - 🏦 Transferencia
+  - 📱 Pago Móvil
+  - 💳 Punto de Venta (tarjeta)
+  - ₿ Binance
+  - 📧 PayPal
+  - 🔄 Airtm
+
+DESPUÉS DE CONFIRMAR:
+  - 🖨️ Imprimir recibo térmico
+  - 📄 Descargar PDF
+  - 📱 Enviar por WhatsApp
+
+MARGEN DE GANANCIA:
+  Cada línea muestra el margen. Puedes cambiarlo manualmente
+  (hasta 100%). Este dato NO aparece en el recibo del cliente.
+
+================================================================================
+8. CONTROL DE CAJA
+================================================================================
+
+Ve a: 💰 Caja
+
+ABRIR CAJA:
+  1. Click "🔓 Abrir Caja"
+  2. Ingresar monto inicial (efectivo)
+  3. Confirmar
+
+CERRAR CAJA:
+  1. Click "🔒 Cerrar Caja"
+  2. Ingresar efectivo contado
+  3. Confirmar (sistema calcula balance)
+
+REPORTE DE CAJA:
+  - Ventas del día
+  - Ingresos por forma de pago
+  - Egresos
+  - Balance final
+
+La caja solo se abre en horario laborable configurado.
+
+================================================================================
+9. COMPRAS E INVENTARIO
+================================================================================
+
+Ve a: 🛒 Compras → + Nueva Compra
+
+REGISTRAR COMPRA:
+  1. Seleccionar proveedor
+  2. Agregar productos con cantidad y costo
+  3. Datos de factura del proveedor (número, fecha)
+  4. Confirmar
+
+¡El stock se actualiza automáticamente al confirmar!
+
+================================================================================
+10. PROVEEDORES
+================================================================================
+
+Ve a: 🏢 Proveedores → + Nuevo Proveedor
+
+CAMPOS:
+  - Nombre (requerido)
+  - RIF
+  - Contacto
+  - Teléfono
+  - Email
+  - Dirección
+
+================================================================================
+11. ÓRDENES DE SERVICIO
+================================================================================
+
+Ve a: 🔧 Servicios → + Nueva Orden
+
+DATOS DE LA ORDEN:
+  - Cliente
+  - Equipo (tipo, marca, modelo, serie)
+  - Diagnóstico / Falla reportada
+  - Trabajo a realizar
+
+AL ENTREGAR:
+  - Agregar materiales utilizados
+  - Confirmar cobro
+  - Imprimir comprobante
+
+================================================================================
+12. REPORTES
+================================================================================
+
+Ve a: 📈 Reportes
+
+REPORTES DISPONIBLES:
+  - Resumen Diario: Ventas del día, IVA, formas de pago
+  - Top 10 Productos: Más vendidos
+  - Compras vs Ventas: Comparativa por período
+  - Flujo de Efectivo: Ingresos, egresos, balance
+  - Bitácora: Registro de acciones del sistema
+
+Puedes filtrar por fechas y exportar a CSV.
+
+================================================================================
+13. OPERADORES
+================================================================================
+
+Ve a: 👤 Operadores (solo administradores)
+
+CREAR OPERADOR:
+  1. Click "+ Nuevo Operador"
+  2. Nombre
+  3. PIN (4 dígitos)
+  4. Rol: Administrador u Operador
+
+ROLES:
+  - Administrador: Acceso completo a todo
+  - Operador: Solo facturación, servicios, dashboard
+
+SEGURIDAD:
+  - PINs encriptados (SHA-256)
+  - Bloqueo tras 5 intentos fallidos (5 minutos)
+  - Sesión expira a las 8 horas
+  - Eliminar facturas/compras requiere PIN admin
+
+================================================================================
+14. LICENCIA Y ACTUALIZACIONES
+================================================================================
+
+TIPOS DE LICENCIA:
+  - Vitalicia ($50): Uso de por vida, sin actualizaciones
+  - PRO ($30/año): Incluye actualizaciones y soporte
+
+ACTIVAR LICENCIA:
+  1. Ve a ⚙️ Configuración
+  2. Sección "Licencia"
+  3. Click "Activar Licencia"
+  4. Pegar clave recibida
+  5. Escribir nombre de empresa
+  6. Click "Activar"
+
+MODO DEMO:
+  30 días de prueba con todas las funciones.
+  Después debes activar licencia.
+
+ACTUALIZACIONES (Solo PRO):
+  - Verificación automática
+  - Menú Ayuda → Buscar actualizaciones
+  - Se descarga e instala automáticamente
+
+================================================================================
+15. RESPALDO DE DATOS
+================================================================================
+
+¡IMPORTANTE! Haz respaldos periódicos.
+
+EXPORTAR:
+  1. ⚙️ Configuración
+  2. "📤 Exportar Datos (JSON)"
+  3. Guardar archivo en lugar seguro
+
+IMPORTAR:
+  1. "📥 Importar Datos (JSON)"
+  2. Seleccionar archivo de respaldo
+  3. Confirmar (reemplaza datos actuales)
+
+El sistema recuerda cada 7 días hacer respaldo.
+
+================================================================================
+16. PREGUNTAS FRECUENTES
+================================================================================
+
+P: ¿Puedo usar en múltiples computadoras?
+R: No, cada licencia es para un solo dispositivo.
+
+P: ¿Qué pasa si pierdo los datos?
+R: Solo puedes restaurar si tienes respaldo exportado.
+
+P: ¿Cómo cambio el PIN del admin?
+R: Ve a Operadores → Administrador → Editar PIN.
+
+P: ¿Cómo anulo una factura?
+R: En lista de facturas, click en 🚫. Requiere PIN admin.
+
+P: ¿Funciona sin internet?
+R: Sí. Solo necesita internet para actualizaciones.
+
+P: ¿Cómo cambio la tasa del dólar?
+R: Configuración → Tasa del Dólar → Guardar.
+
+P: ¿Puedo configurar varios IVA?
+R: Sí. Cada producto tiene su IVA (16%, 10% o 0%).
+
+P: ¿Quién hizo un cambio en el sistema?
+R: Reportes → Bitácora (registro de acciones).
+
+================================================================================
+                         FIN DEL MANUAL
+               Desarrollado por Tecnicowin - 2026
+================================================================================

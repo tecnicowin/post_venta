@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual de Usuario - Punto de Venta</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; }
+    .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+    
+    .cover { text-align: center; padding: 80px 20px; background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; border-radius: 16px; margin-bottom: 40px; }
+    .cover h1 { font-size: 36px; margin-bottom: 8px; }
+    .cover .subtitle { font-size: 18px; opacity: 0.9; }
+    .cover .version { margin-top: 20px; font-size: 14px; opacity: 0.7; }
+    
+    .toc { background: white; border-radius: 12px; padding: 32px; margin-bottom: 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .toc h2 { margin-bottom: 16px; color: #1e40af; }
+    .toc ol { padding-left: 24px; }
+    .toc li { margin-bottom: 8px; }
+    .toc a { color: #3b82f6; text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    
+    .section { background: white; border-radius: 12px; padding: 32px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .section h2 { color: #1e40af; font-size: 24px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
+    .section h3 { color: #334155; font-size: 18px; margin: 20px 0 10px; }
+    .section h4 { color: #475569; font-size: 16px; margin: 16px 0 8px; }
+    .section p { margin-bottom: 12px; color: #475569; }
+    .section ul, .section ol { margin: 8px 0 16px 24px; color: #475569; }
+    .section li { margin-bottom: 6px; }
+    
+    .step { display: flex; gap: 16px; margin-bottom: 16px; padding: 16px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #3b82f6; }
+    .step-num { background: #3b82f6; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
+    .step-content { flex: 1; }
+    .step-content strong { color: #1e293b; }
+    
+    .tip { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 16px 0; }
+    .tip::before { content: '💡 Consejo: '; font-weight: bold; color: #166534; }
+    
+    .warning { background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 16px; margin: 16px 0; }
+    .warning::before { content: '⚠️ Importante: '; font-weight: bold; color: #92400e; }
+    
+    .info { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; margin: 16px 0; }
+    .info::before { content: 'ℹ️ Nota: '; font-weight: bold; color: #1e40af; }
+    
+    .shortcut { display: inline-block; background: #1e293b; color: white; padding: 2px 8px; border-radius: 4px; font-family: monospace; font-size: 13px; }
+    
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    th { background: #f1f5f9; font-weight: 600; color: #334155; }
+    td { color: #475569; }
+    
+    .btn-table { display: inline-block; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; }
+    .btn-green { background: #dcfce7; color: #166534; }
+    .btn-blue { background: #dbeafe; color: #1e40af; }
+    .btn-yellow { background: #fef3c7; color: #92400e; }
+    .btn-red { background: #fee2e2; color: #991b1b; }
+    
+    @media print {
+      body { background: white; }
+      .container { padding: 20px; }
+      .section { box-shadow: none; border: 1px solid #e2e8f0; page-break-inside: avoid; }
+      .cover { page-break-after: always; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="cover">
+      <div style="font-size:64px;margin-bottom:16px">🏪</div>
+      <h1>Punto de Venta</h1>
+      <div class="subtitle">Sistema de Facturación Profesional</div>
+      <div class="version">Manual de Usuario — Versión 1.0.0</div>
+    </div>
+
+    <div class="toc">
+      <h2>📋 Índice</h2>
+      <ol>
+        <li><a href="#inicio">Primeros Pasos</a></li>
+        <li><a href="#login">Inicio de Sesión</a></li>
+        <li><a href="#configuracion">Configuración del Negocio</a></li>
+        <li><a href="#productos">Gestión de Productos</a></li>
+        <li><a href="#categorias">Categorías</a></li>
+        <li><a href="#clientes">Gestión de Clientes</a></li>
+        <li><a href="#facturacion">Facturación</a></li>
+        <li><a href="#caja">Control de Caja</a></li>
+        <li><a href="#compras">Compras e Inventario</a></li>
+        <li><a href="#proveedores">Proveedores</a></li>
+        <li><a href="#servicios">Órdenes de Servicio</a></li>
+        <li><a href="#reportes">Reportes</a></li>
+        <li><a href="#operadores">Operadores</a></li>
+        <li><a href="#licencia">Licencia y Actualizaciones</a></li>
+        <li><a href="#backup">Respaldo de Datos</a></li>
+        <li><a href="#faq">Preguntas Frecuentes</a></li>
+      </ol>
+    </div>
+
+    <!-- SECCIÓN 1: PRIMEROS PASOS -->
+    <div class="section" id="inicio">
+      <h2>1. Primeros Pasos</h2>
+      
+      <h3>Instalación</h3>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content"><strong>Copia el archivo</strong> <code>PuntoDeVenta.exe</code> a la carpeta donde deseas usar el sistema (escritorio, USB, etc.)</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content"><strong>Ejecuta el archivo</strong> haciendo doble clic. La primera vez tardará unos segundos en cargar.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content"><strong>Los datos se guardan automáticamente</strong> en la carpeta del sistema. No necesitas configurar nada más.</div>
+      </div>
+
+      <div class="warning">Los datos se almacenan en tu computadora. Haz respaldos periódicos desde Configuración → Exportar Datos.</div>
+
+      <h3>Requisitos del Sistema</h3>
+      <ul>
+        <li>Windows 10 o superior</li>
+        <li>4GB de RAM mínimo</li>
+        <li>500MB de espacio libre</li>
+        <li>Conexión a internet (opcional, para actualizaciones)</li>
+      </ul>
+    </div>
+
+    <!-- SECCIÓN 2: INICIO DE SESIÓN -->
+    <div class="section" id="login">
+      <h2>2. Inicio de Sesión</h2>
+      
+      <p>Al abrir el sistema, se solicita un PIN de 4 dígitos para acceder.</p>
+      
+      <div class="info">El PIN por defecto del administrador es <strong>1234</strong>. Cámbialo después de iniciar sesión por primera vez.</div>
+
+      <h3>Opciones de acceso</h3>
+      <ul>
+        <li><strong>PIN 1234:</strong> Acceso completo (Administrador)</li>
+        <li><strong>PIN de operador:</strong> Acceso limitado según permisos</li>
+      </ul>
+
+      <div class="tip">Si olvidas tu PIN, contacta al administrador del sistema para que cree uno nuevo desde Operadores.</div>
+    </div>
+
+    <!-- SECCIÓN 3: CONFIGURACIÓN -->
+    <div class="section" id="configuracion">
+      <h2>3. Configuración del Negocio</h2>
+      
+      <p>Antes de usar el sistema, configura los datos de tu negocio. Ve a <strong>⚙️ Configuración</strong> en el menú lateral.</p>
+
+      <h3>Datos del Negocio</h3>
+      <table>
+        <tr><th>Campo</th><th>Descripción</th><th>Ejemplo</th></tr>
+        <tr><td>Nombre Comercial</td><td>Nombre de tu negocio</td><td>Bodega La Esperanza</td></tr>
+        <tr><td>RIF</td><td>Registro de identificación fiscal</td><td>J-12345678-9</td></tr>
+        <tr><td>Teléfono</td><td>Número de contacto</td><td>0212-1234567</td></tr>
+        <tr><td>Dirección</td><td>Dirección del negocio</td><td>Caracas, Venezuela</td></tr>
+      </table>
+
+      <h3>Configuración Fiscal</h3>
+      <table>
+        <tr><th>Campo</th><th>Descripción</th><th>Valor por defecto</th></tr>
+        <tr><td>IVA 16%</td><td>Alícuota general</td><td>0.16</td></tr>
+        <tr><td>IVA 10%</td><td>Alícuota reducida</td><td>0.10</td></tr>
+        <tr><td>Margen General</td><td>Margen de ganancia por defecto para nuevos productos</td><td>25%</td></tr>
+      </table>
+
+      <div class="tip">Actualiza la tasa del dólar cada día antes de abrir la caja si facturas en divisas.</div>
+
+      <h3>Horario y Días Laborables</h3>
+      <p>Configura los días y horas en que tu negocio abre. La caja solo se puede abrir dentro de este horario.</p>
+
+      <h3>Impresora USB</h3>
+      <p>Si tienes una impresora térmica conectada:</p>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content"><strong>Configura la impresora</strong> como predeterminada en Windows</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content"><strong>Selecciona el tamaño de papel</strong> (58mm o 80mm)</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content"><strong>Haz clic en "Imprimir Prueba"</strong> para verificar que funciona</div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 4: PRODUCTOS -->
+    <div class="section" id="productos">
+      <h2>4. Gestión de Productos</h2>
+      
+      <p>Ve a <strong>📦 Inventario</strong> para gestionar tus productos.</p>
+
+      <h3>Agregar un Producto</h3>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content"><strong>Haz clic en "+ Producto"</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content"><strong>Completa los datos:</strong>
+          <ul style="margin-top:8px">
+            <li><strong>Descripción:</strong> Nombre del producto</li>
+            <li><strong>Categoría:</strong> Selecciona una categoría</li>
+            <li><strong>Código de Barras:</strong> Código SKU o barras (opcional)</li>
+            <li><strong>Costo de Compra:</strong> Cuanto te costó</li>
+            <li><strong>Margen de Ganancia:</strong> % de ganancia deseada</li>
+            <li><strong>Precio Mayorista:</strong> Precio para mayoreo</li>
+            <li><strong>Precio Detal:</strong> Precio para venta al detal</li>
+            <li><strong>IVA:</strong> 16%, 10% o 0%</li>
+            <li><strong>Stock Mínimo:</strong> Cantidad mínima antes de alertar</li>
+          </ul>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content"><strong>Haz clic en "Guardar"</strong></div>
+      </div>
+
+      <div class="tip">Si ingresas el costo y el margen, el precio de venta se calcula automáticamente: <code>Precio = Costo × (1 + Margen/100)</code></div>
+
+      <h3>Actualizar Stock</h3>
+      <p>Ve a <strong>🛒 Compras</strong> para registrar entradas de inventario. Cada compra actualiza automáticamente el stock.</p>
+
+      <h3>Buscar Productos</h3>
+      <p>Usa el campo de búsqueda o filtra por categoría para encontrar productos rápidamente.</p>
+    </div>
+
+    <!-- SECCIÓN 5: CATEGORÍAS -->
+    <div class="section" id="categorias">
+      <h2>5. Categorías</h2>
+      
+      <p>Las categorías ayudan a organizar tus productos.</p>
+
+      <h3>Crear una Categoría</h3>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">Ve a <strong>📦 Inventario</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">Haz clic en <strong>"+ Categoría"</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">Escribe el nombre, selecciona un color y haz clic en "Guardar"</div>
+      </div>
+
+      <div class="tip">Puedes asignar un margen de ganancia por categoría. Si un producto no tiene margen propio, usará el de su categoría.</div>
+    </div>
+
+    <!-- SECCIÓN 6: CLIENTES -->
+    <div class="section" id="clientes">
+      <h2>6. Gestión de Clientes</h2>
+      
+      <p>Ve a <strong>👥 Clientes</strong> para registrar la información de tus clientes.</p>
+
+      <h3>Registrar un Cliente</h3>
+      <table>
+        <tr><th>Campo</th><th>Requerido</th><th>Descripción</th></tr>
+        <tr><td>Nombre</td><td>Sí</td><td>Nombre del cliente</td></tr>
+        <tr><td>Apellido</td><td>No</td><td>Apellido del cliente</td></tr>
+        <tr><td>Nombre Comercial</td><td>No</td><td>Nombre de la empresa</td></tr>
+        <tr><td>Cédula / RIF</td><td>No</td><td>Documento de identidad</td></tr>
+        <tr><td>Teléfono</td><td>No</td><td>Número de contacto</td></tr>
+        <tr><td>Email</td><td>No</td><td>Correo electrónico</td></tr>
+        <tr><td>Dirección</td><td>No</td><td>Dirección del cliente</td></tr>
+      </table>
+
+      <div class="info">También puedes crear clientes directamente desde la facturación al momento de generar una venta.</div>
+    </div>
+
+    <!-- SECCIÓN 7: FACTURACIÓN -->
+    <div class="section" id="facturacion">
+      <h2>7. Facturación</h2>
+      
+      <p>La facturación es la función principal del sistema. Ve a <strong>📄 Facturación</strong>.</p>
+
+      <div class="warning">Debes abrir la caja antes de facturar. Ve a "Caja" y haz clic en "Abrir Caja".</div>
+
+      <h3>Crear una Factura</h3>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content"><strong>Haz clic en "+ Nueva Factura"</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content"><strong>Selecciona el cliente:</strong> Puede ser "Detal" (genérico) o un cliente registrado</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content"><strong>Agrega productos:</strong> Haz clic en "+ Agregar Producto" y selecciona de la lista</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content"><strong>Ajusta cantidades y precios:</strong> Puedes cambiar cantidad, precio y descuento por línea</div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-content"><strong>Selecciona tipo de venta:</strong> Detal o Mayor</div>
+      </div>
+      <div class="step">
+        <div class="step-num">6</div>
+        <div class="step-content"><strong>Haz clic en "✓ Confirmar Factura"</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">7</div>
+        <div class="step-content"><strong>Selecciona forma de pago:</strong> Efectivo, Pago Móvil, Transferencia, etc.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">8</div>
+        <div class="step-content"><strong>Confirma el pago</strong></div>
+      </div>
+
+      <h3>Formas de Pago Disponibles</h3>
+      <table>
+        <tr><th>Forma de Pago</th><th>Descripción</th></tr>
+        <tr><td>💰 Efectivo ($)</td><td>Pago en dólares efectivo</td></tr>
+        <tr><td>🏦 Transferencia</td><td>Transferencia bancaria</td></tr>
+        <tr><td>📱 Pago Móvil</td><td>Pago móvil interbancario</td></tr>
+        <tr><td>💳 Punto de Venta</td><td>Tarjeta de crédito/débito</td></tr>
+        <tr><td>₿ Binance</td><td>Pago con criptomonedas</td></tr>
+        <tr><td>📧 PayPal</td><td>Pago por PayPal</td></tr>
+        <tr><td>🔄 Airtm</td><td>Pago por Airtm</td></tr>
+      </table>
+
+      <h3>Imprimir y Compartir</h3>
+      <p>Después de confirmar la factura, puedes:</p>
+      <ul>
+        <li><span class="btn-table btn-blue">🖨️ Imprimir</span> — Imprimir recibo en térmica</li>
+        <li><span class="btn-table btn-green">📄 PDF</span> — Descargar recibo en PDF</li>
+        <li><span class="btn-table btn-green">📱 WhatsApp</span> — Enviar recibo por WhatsApp</li>
+      </ul>
+
+      <h3>Margen de Ganancia por Línea</h3>
+      <p>Cada producto en la factura muestra el margen de ganancia aplicado. Puedes ajustarlo manualmente (hasta 100%) antes de confirmar. Este dato NO aparece en el recibo del cliente.</p>
+    </div>
+
+    <!-- SECCIÓN 8: CAJA -->
+    <div class="section" id="caja">
+      <h2>8. Control de Caja</h2>
+      
+      <p>Ve a <strong>💰 Caja</strong> para gestionar el efectivo del día.</p>
+
+      <h3>Abrir Caja</h3>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content"><strong>Haz clic en "🔓 Abrir Caja"</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content"><strong>Ingresa el monto inicial:</strong> Cantidad de efectivo con la que abres</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content"><strong>Confirma</strong></div>
+      </div>
+
+      <div class="warning">La caja solo se puede abrir en días y horarios laborables configurados.</div>
+
+      <h3>Cerrar Caja</h3>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content"><strong>Haz clic en "🔒 Cerrar Caja"</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content"><strong>Ingresa el efectivo contado:</strong> Cantidad real en caja</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content"><strong>Confirma</strong> — El sistema calcula automáticamente el balance</div>
+      </div>
+
+      <div class="tip">El sistema muestra un resumen de todas las ventas del día, ingresos, egresos y el balance final.</div>
+    </div>
+
+    <!-- SECCIÓN 9: COMPRAS -->
+    <div class="section" id="compras">
+      <h2>9. Compras e Inventario</h2>
+      
+      <p>Ve a <strong>🛒 Compras</strong> para registrar compras a proveedores.</p>
+
+      <h3>Registrar una Compra</h3>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content"><strong>Haz clic en "+ Nueva Compra"</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content"><strong>Selecciona el proveedor</strong> (o escribe uno nuevo)</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content"><strong>Agrega productos:</strong> Selecciona y cantidad</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content"><strong>Ingresa datos de la factura del proveedor:</strong> Número, fecha, control</div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-content"><strong>Confirma</strong> — El stock se actualiza automáticamente</div>
+      </div>
+
+      <div class="info">Al confirmar una compra, el sistema actualiza el stock de cada producto automáticamente.</div>
+    </div>
+
+    <!-- SECCIÓN 10: PROVEEDORES -->
+    <div class="section" id="proveedores">
+      <h2>10. Proveedores</h2>
+      
+      <p>Ve a <strong>🏢 Proveedores</strong> para gestionar tus proveedores.</p>
+
+      <h3>Registrar un Proveedor</h3>
+      <table>
+        <tr><th>Campo</th><th>Requerido</th><th>Descripción</th></tr>
+        <tr><td>Nombre</td><td>Sí</td><td>Nombre o razón social</td></tr>
+        <tr><td>RIF</td><td>No</td><td>Registro fiscal</td></tr>
+        <tr><td>Contacto</td><td>No</td><td>Nombre del contacto</td></tr>
+        <tr><td>Teléfono</td><td>No</td><td>Número de contacto</td></tr>
+        <tr><td>Email</td><td>No</td><td>Correo electrónico</td></tr>
+        <tr><td>Dirección</td><td>No</td><td>Dirección del proveedor</td></tr>
+      </table>
+    </div>
+
+    <!-- SECCIÓN 11: SERVICIOS -->
+    <div class="section" id="servicios">
+      <h2>11. Órdenes de Servicio</h2>
+      
+      <p>Ve a <strong>🔧 Servicios</strong> para gestionar órdenes de trabajo (reparaciones, mantenimiento, etc.).</p>
+
+      <h3>Crear una Orden de Servicio</h3>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content"><strong>Haz clic en "+ Nueva Orden"</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content"><strong>Completa los datos:</strong>
+          <ul style="margin-top:8px">
+            <li>Cliente</li>
+            <li>Equipo (tipo, marca, modelo, serie)</li>
+            <li>Diagnóstico / Falla reportada</li>
+            <li>Trabajo a realizar</li>
+          </ul>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content"><strong>Al entregar:</strong> Agrega materiales utilizados y confirma el cobro</div>
+      </div>
+
+      <div class="tip">Puedes imprimir un comprobante de recepción para el cliente.</div>
+    </div>
+
+    <!-- SECCIÓN 12: REPORTES -->
+    <div class="section" id="reportes">
+      <h2>12. Reportes</h2>
+      
+      <p>Ve a <strong>📈 Reportes</strong> para consultar el rendimiento de tu negocio.</p>
+
+      <h3>Reportes Disponibles</h3>
+      <table>
+        <tr><th>Reporte</th><th>Descripción</th></tr>
+        <tr><td>📊 Resumen Diario</td><td>Ventas del día, IVA cobrado, formas de pago</td></tr>
+        <tr><td>🏆 Top 10 Productos</td><td>Productos más vendidos</td></tr>
+        <tr><td>🛒 Compras vs Ventas</td><td>Comparativa de compras y ventas por período</td></tr>
+        <tr><td>💰 Flujo de Efectivo</td><td>Ingresos, egresos y balance</td></tr>
+        <tr><td>📋 Bitácora</td><td>Registro de acciones del sistema (quién hizo qué)</td></tr>
+      </table>
+
+      <div class="tip">Puedes filtrar reportes por rango de fechas y exportar a CSV.</div>
+    </div>
+
+    <!-- SECCIÓN 13: OPERADORES -->
+    <div class="section" id="operadores">
+      <h2>13. Operadores</h2>
+      
+      <p>Ve a <strong>👤 Operadores</strong> (solo administradores) para gestionar quién tiene acceso al sistema.</p>
+
+      <h3>Crear un Operador</h3>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content"><strong>Haz clic en "+ Nuevo Operador"</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content"><strong>Completa los datos:</strong> Nombre, PIN (4 dígitos), rol</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content"><strong>Selecciona el rol:</strong>
+          <ul style="margin-top:8px">
+            <li><strong>Administrador:</strong> Acceso completo</li>
+            <li><strong>Operador:</strong> Solo facturación, servicios y dashboard</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Seguridad</h3>
+      <ul>
+        <li><strong>PINs protegidos:</strong> Se guardan encriptados (SHA-256)</li>
+        <li><strong> Bloqueo por intentos:</strong> 5 intentos fallidos = 5 minutos bloqueado</li>
+        <li><strong>Sesión:</strong> Se cierra automáticamente después de 8 horas</li>
+        <li><strong>Eliminar facturas/compras:</strong> Requiere PIN de administrador</li>
+      </ul>
+    </div>
+
+    <!-- SECCIÓN 14: LICENCIA -->
+    <div class="section" id="licencia">
+      <h2>14. Licencia y Actualizaciones</h2>
+
+      <h3>Tipos de Licencia</h3>
+      <table>
+        <tr><th>Tipo</th><th>Precio</th><th>Duración</th><th>Actualizaciones</th></tr>
+        <tr><td>🟢 Vitalicia</td><td>$50</td><td>Para siempre</td><td>No incluidas</td></tr>
+        <tr><td>🔵 PRO</td><td>$30/año</td><td>1 año renovable</td><td>Sí incluidas</td></tr>
+      </table>
+
+      <h3>Activar una Licencia</h3>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">Ve a <strong>⚙️ Configuración</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">En la sección <strong>Licencia</strong>, haz clic en "Activar Licencia"</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content"><strong>Pega la clave</strong> que recibiste por WhatsApp/email</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content"><strong>Escribe el nombre de tu empresa</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-content"><strong>Haz clic en "Activar"</strong></div>
+      </div>
+
+      <h3>Modo Demo</h3>
+      <p>Al instalar el sistema, tienes 30 días de prueba gratuita con todas las funciones. Después de este período, debes activar una licencia para seguir usando el sistema.</p>
+
+      <h3>Actualizaciones (Solo PRO)</h3>
+      <p>Si tienes licencia PRO, el sistema verifica actualizaciones automáticamente. También puedes buscarlas manualmente desde el menú <strong>Ayuda → Buscar actualizaciones</strong>.</p>
+
+      <div class="info">Las actualizaciones se descargan e instalan automáticamente. El sistema se reinicia al completar la descarga.</div>
+    </div>
+
+    <!-- SECCIÓN 15: BACKUP -->
+    <div class="section" id="backup">
+      <h2>15. Respaldo de Datos</h2>
+      
+      <p>Es importante hacer respaldos periódicos de tus datos.</p>
+
+      <h3>Exportar Datos</h3>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">Ve a <strong>⚙️ Configuración</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">En "Datos de Backup", haz clic en <strong>"📤 Exportar Datos (JSON)"</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content"><strong>Guarda el archivo</strong> en un lugar seguro (USB, disco duro externo, nube)</div>
+      </div>
+
+      <h3>Importar Datos</h3>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">Haz clic en <strong>"📥 Importar Datos (JSON)"</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content"><strong>Selecciona el archivo</strong> de respaldo</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content"><strong>Confirma</strong> — Los datos actuales serán reemplazados</div>
+      </div>
+
+      <div class="warning">La importación reemplaza TODOS los datos actuales. Asegúrate de tener un respaldo actualizado antes de importar.</div>
+
+      <div class="tip">El sistema te recordará cada 7 días hacer un respaldo.</div>
+    </div>
+
+    <!-- SECCIÓN 16: FAQ -->
+    <div class="section" id="faq">
+      <h2>16. Preguntas Frecuentes</h2>
+
+      <h3>¿Puedo usar el sistema en múltiples computadoras?</h3>
+      <p>Cada licencia está vinculada a un dispositivo. Si necesitas usarlo en otra computadora, contacta para obtener una licencia adicional.</p>
+
+      <h3>¿Qué pasa si pierdo los datos?</h3>
+      <p>Si tienes un respaldo exportado, puedes restaurarlos desde Configuración → Importar. Si no tienes respaldo, los datos se pierden.</p>
+
+      <h3>¿Puedo cambiar el PIN del administrador?</h3>
+      <p>Sí. Ve a Operadores, busca "Administrador" y edita su PIN.</p>
+
+      <h3>¿Cómo anulo una factura?</h3>
+      <p>En la lista de facturas, busca la factura y haz clic en 🚫. Requiere PIN de administrador. Si la factura estaba pagada, el stock se restaura automáticamente.</p>
+
+      <h3>¿El sistema funciona sin internet?</h3>
+      <p>Sí. El sistema funciona completamente offline. Solo necesita internet para actualizaciones (solo licencias PRO).</p>
+
+      <h3>¿Cómo cambio la tasa del dólar?</h3>
+      <p>Ve a Configuración, actualiza el campo "Tasa del Dólar" y guarda. Actualiza esto cada día antes de abrir la caja.</p>
+
+      <h3>¿Puedo configurar múltiples tasas de IVA?</h3>
+      <p>Sí. El sistema maneja IVA 16%, IVA 10% y productos exentos (0%). Cada producto tiene su propia configuración de IVA.</p>
+
+      <h3>¿Cómo veo quién hizo un cambio en el sistema?</h3>
+      <p>Ve a Reportes → Bitácora. Ahí se registran todas las acciones importantes (apertura/cierre de caja, facturas, eliminaciones, etc.)</p>
+    </div>
+
+    <div style="text-align:center;padding:40px;color:#94a3b8">
+      <p>Manual de Usuario — Punto de Venta v1.0.0</p>
+      <p>Desarrollado por Tecnicowin</p>
+      <p style="margin-top:8px">¿Necesitas ayuda? Contacta a tu proveedor.</p>
+    </div>
+
+  </div>
+</body>
+</html>
