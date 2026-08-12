@@ -69,6 +69,8 @@ const Invoice = {
     if (existingIdx >= 0) {
       this.currentInvoice.items[existingIdx].cantidad += 1;
     } else {
+      const margen = product.margenGanancia || Config.get('margenGeneral') || 25;
+      const costo = product.costoCompra || 0;
       this.currentInvoice.items.push({
         productoId: product.id,
         descripcion: product.descripcion,
@@ -78,7 +80,9 @@ const Invoice = {
         cantidad: 1,
         subtotal: product.precioDetal,
         iva: product.iva || '16',
-        totalPorRubro: product.precioDetal
+        totalPorRubro: product.precioDetal,
+        costoCompra: costo,
+        margenGanancia: margen
       });
     }
     this.recalculate();
@@ -94,6 +98,9 @@ const Invoice = {
       if (product) {
         item.precio = value === 'mayor' ? product.precioMayor : product.precioDetal;
         item.precioTipo = value;
+        if (item.costoCompra > 0) {
+          item.margenGanancia = item.precio > 0 ? Math.round(((item.precio - item.costoCompra) / item.costoCompra) * 100) : 0;
+        }
       }
     } else if (field === 'cantidad') {
       item.cantidad = parseFloat(value) || 1;
@@ -101,6 +108,15 @@ const Invoice = {
       item.descuento = parseFloat(value) || 0;
     } else if (field === 'precio') {
       item.precio = parseFloat(value) || 0;
+      if (item.costoCompra > 0) {
+        item.margenGanancia = item.precio > 0 ? Math.round(((item.precio - item.costoCompra) / item.costoCompra) * 100) : 0;
+      }
+    } else if (field === 'margenGanancia') {
+      const margen = Math.min(100, Math.max(0, parseFloat(value) || 0));
+      item.margenGanancia = margen;
+      if (item.costoCompra > 0) {
+        item.precio = parseFloat((item.costoCompra * (1 + margen / 100)).toFixed(2));
+      }
     }
 
     item.subtotal = item.precio * item.cantidad;
@@ -458,6 +474,15 @@ const Invoice = {
               onchange="Invoice.updateItem(${idx}, 'precio', this.value); Invoice.renderFacturaEditor()">
           </td>
           <td class="input-cell">
+            <div class="flex items-center gap-1">
+              <input type="number" value="${item.margenGanancia || 0}" step="1" min="0" max="100"
+                style="width:55px"
+                onchange="Invoice.updateItem(${idx}, 'margenGanancia', this.value); Invoice.renderFacturaEditor()">
+              <span style="font-size:11px;color:#94a3b8">%</span>
+            </div>
+            ${item.costoCompra > 0 ? `<div style="font-size:10px;color:#64748b">Costo: ${Utils.formatCurrency(item.costoCompra)}</div>` : ''}
+          </td>
+          <td class="input-cell">
             <input type="number" value="${item.descuento}" step="0.1" min="0" max="100"
               onchange="Invoice.updateItem(${idx}, 'descuento', this.value); Invoice.renderFacturaEditor()">
           </td>
@@ -473,7 +498,7 @@ const Invoice = {
     });
 
     if (inv.items.length === 0) {
-      itemsHtml = `<tr><td colspan="7" class="text-center text-muted" style="padding:32px">
+      itemsHtml = `<tr><td colspan="8" class="text-center text-muted" style="padding:32px">
         Agrega productos usando el botón de abajo
       </td></tr>`;
     }
@@ -499,6 +524,7 @@ const Invoice = {
                   <th>Descripción</th>
                   <th style="width:100px">Tipo Precio</th>
                   <th style="width:100px">Precio</th>
+                  <th style="width:90px">Ganancia %</th>
                   <th style="width:80px">Descuento %</th>
                   <th style="width:80px">Cantidad</th>
                   <th class="text-right" style="width:100px">Total</th>
