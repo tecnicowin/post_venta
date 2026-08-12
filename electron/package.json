@@ -1,0 +1,59 @@
+{
+  "name": "punto-de-venta",
+  "version": "1.0.0",
+  "description": "Sistema de Facturación - Punto de Venta",
+  "main": "main.js",
+  "author": "Tecnicowin",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --portable",
+    "build-installer": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.tecnicowin.puntodeventa",
+    "productName": "PuntoDeVenta",
+    "directories": {
+      "output": "../build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "../index.html",
+      "../css/**/*",
+      "../js/**/*",
+      "../assets/**/*",
+      "../sw.js",
+      "../manifest.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "../assets/icons/icon-192.png",
+      "artifactName": "PuntoDeVenta.${ext}"
+    },
+    "portable": {
+      "artifactName": "PuntoDeVenta.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Punto de Venta",
+      "artifactName": "PuntoDeVenta-Setup.${ext}"
+    }
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}

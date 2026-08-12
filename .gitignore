@@ -1,0 +1,9 @@
+node_modules/
+build/
+dist/
+.cache/
+*.exe
+*.msi
+*.dmg
+*.AppImage
+electron/node_modules/
