@@ -57,6 +57,11 @@
       </div>
 
       <div class="form-group">
+        <label>Nombre de la Empresa / Cliente</label>
+        <input type="text" id="empresa" placeholder="Ej: Bodega La Esperanza">
+      </div>
+
+      <div class="form-group">
         <label>Email del Cliente</label>
         <input type="email" id="email" placeholder="cliente@email.com">
       </div>
@@ -81,6 +86,10 @@
             <div class="info-label">Expira</div>
             <div class="info-value" id="resultExpira"></div>
           </div>
+        </div>
+        <div class="info-item" style="margin-top:8px">
+          <div class="info-label">Licenciado a</div>
+          <div class="info-value" id="resultEmpresa" style="color:#22d3ee"></div>
         </div>
         <button class="btn btn-copy" id="btnCopy">📋 Copiar Clave</button>
         <button class="btn btn-whatsapp" id="btnWhatsApp">📱 Enviar por WhatsApp</button>
@@ -117,7 +126,7 @@
       container.innerHTML = history.slice().reverse().map((item, i) => `
         <div class="history-item" onclick="copyToClipboard('${item.clave}')">
           <div><span class="badge badge-${item.tipo.toLowerCase()}">${item.tipo}</span> <span class="history-key">${item.clave}</span></div>
-          <div class="history-meta">${item.email || 'Sin email'} — ${new Date(item.fecha).toLocaleString('es-VE')}</div>
+          <div class="history-meta">${item.empresa || ''} ${item.email ? '— ' + item.email : ''} — ${new Date(item.fecha).toLocaleString('es-VE')}</div>
         </div>
       `).join('');
     }
@@ -143,12 +152,13 @@
 
     document.getElementById('btnGenerate').addEventListener('click', () => {
       const tipo = document.getElementById('tipo').value;
+      const empresa = document.getElementById('empresa').value.trim();
       const email = document.getElementById('email').value.trim();
       const expira = document.getElementById('expira').value;
 
       const clave = generateKey(tipo);
 
-      const record = { clave, tipo, email, expira: tipo === 'PRO' ? expira : null, fecha: new Date().toISOString() };
+      const record = { clave, tipo, empresa, email, expira: tipo === 'PRO' ? expira : null, fecha: new Date().toISOString() };
       const history = loadHistory();
       history.push(record);
       saveHistory(history);
@@ -158,6 +168,7 @@
       document.getElementById('generatedKey').textContent = clave;
       document.getElementById('resultTipo').textContent = tipo === 'VIP' ? 'Vitalicia' : 'PRO Anual';
       document.getElementById('resultExpira').textContent = tipo === 'VIP' ? 'Sin expiración' : expira;
+      document.getElementById('resultEmpresa').textContent = empresa || 'No especificada';
       document.getElementById('result').classList.add('show');
 
       renderHistory();
@@ -186,8 +197,10 @@
     document.getElementById('btnWhatsApp').addEventListener('click', () => {
       if (!lastGenerated) return;
       const tipo = lastGenerated.tipo === 'VIP' ? 'Vitalicia' : 'PRO';
+      const empresa = lastGenerated.empresa ? `Empresa: ${lastGenerated.empresa}\n` : '';
       const msg = encodeURIComponent(
         `Hola! Tu licencia Punto de Venta está lista:\n\n` +
+        empresa +
         `Tipo: ${tipo}\n` +
         `Clave: ${lastGenerated.clave}\n` +
         (lastGenerated.expira ? `Expira: ${lastGenerated.expira}\n` : '') +

@@ -20,6 +20,8 @@ const App = {
       setInterval(() => this.updateClock(), 60000);
 
       const licenseStatus = await License.getStatus();
+      this.updateSidebarLicense(licenseStatus);
+
       if (!licenseStatus.activa && licenseStatus.motivo !== 'demo_expirada') {
         this.showExpiredOverlay(licenseStatus.mensaje || 'Licencia no válida');
         return;
@@ -312,6 +314,20 @@ const App = {
         return `<span class="badge badge-${colors[row.estado] || 'secondary'}">${row.estado}</span>`;
       }}
     ], recentInvoices, { emptyText: 'No hay facturas hoy' });
+  },
+
+  updateSidebarLicense(status) {
+    const el = document.getElementById('sidebarLicenseInfo');
+    if (!el) return;
+
+    if (status.activa && status.empresa) {
+      const tipoLabel = status.tipo === 'VIP' ? '🟢' : '🔵';
+      el.innerHTML = `<span style="font-size:11px;color:#94a3b8">${tipoLabel} Licenciado a</span><br><strong style="font-size:12px;color:#e2e8f0">${Utils.escapeHtml(status.empresa)}</strong>`;
+    } else if (status.tipo === 'DEMO') {
+      el.innerHTML = `<span style="font-size:11px;color:#f59e0b">⚠️ Modo Demo</span><br><span style="font-size:10px;color:#94a3b8">${status.diasRestantes || 30} días restantes</span>`;
+    } else {
+      el.innerHTML = 'Punto de Venta v1.0';
+    }
   },
 
   showExpiredOverlay(mensaje) {

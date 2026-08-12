@@ -41,7 +41,7 @@ const License = {
     }
 
     if (license.tipo === 'VIP') {
-      return { activa: true, tipo: 'VIP', nombre: 'Vitalicia', expira: null };
+      return { activa: true, tipo: 'VIP', nombre: 'Vitalicia', empresa: license.empresa || '', expira: null };
     }
 
     if (license.tipo === 'PRO') {
@@ -50,7 +50,7 @@ const License = {
         return { activa: false, motivo: 'expirada', mensaje: 'Tu licencia PRO ha expirado.' };
       }
       const diasRestantes = Math.ceil((expira - now) / (1000 * 60 * 60 * 24));
-      return { activa: true, tipo: 'PRO', nombre: 'PRO', expira: license.expira, diasRestantes };
+      return { activa: true, tipo: 'PRO', nombre: 'PRO', empresa: license.empresa || '', expira: license.expira, diasRestantes };
     }
 
     return this.getDemoStatus();
@@ -80,10 +80,10 @@ const License = {
     }
   },
 
-  async activate(clave) {
+  async activate(clave, empresa) {
     clave = clave.trim().toUpperCase();
     if (!this.isValidFormat(clave)) {
-      return { ok: false, mensaje: 'Formato de clave inválido. Ejemplo: pdv-PRO-ABCD-1234-EFGH-5678' };
+      return { ok: false, mensaje: 'Formato de clave inválido. Ejemplo: PDV-VIP-ABCD-1234-EFGH-5678' };
     }
 
     try {
@@ -93,6 +93,7 @@ const License = {
       const license = {
         clave,
         tipo: result.tipo,
+        empresa: empresa || '',
         email: result.email || '',
         expira: result.expira || null,
         dispositivos: result.dispositivos || 1,
@@ -103,9 +104,9 @@ const License = {
       };
 
       localStorage.setItem(this.LICENSE_KEY, JSON.stringify(license));
-      await Storage.log('licencia_activada', `Tipo: ${license.tipo}, Clave: ${clave.substring(0, 12)}...`);
+      await Storage.log('licencia_activada', `Tipo: ${license.tipo}, Empresa: ${license.empresa}, Clave: ${clave.substring(0, 12)}...`);
 
-      return { ok: true, tipo: license.tipo, mensaje: 'Licencia activada exitosamente.' };
+      return { ok: true, tipo: license.tipo, mensaje: `Licencia activada para "${license.empresa}".` };
     } catch (e) {
       return { ok: false, mensaje: 'Error al validar. Intenta de nuevo.' };
     }
@@ -264,6 +265,11 @@ const License = {
             <input type="text" class="form-control" id="licenseKeyInput" placeholder="PDV-PRO-XXXX-XXXX-XXXX-XXXX" style="text-transform:uppercase;font-family:monospace;font-size:14px" autocomplete="off" spellcheck="false">
             <div class="form-hint">Ejemplo: PDV-VIP-ABCD-1234-EFGH-5678</div>
           </div>
+          <div class="form-group">
+            <label class="form-label">Nombre de tu Empresa</label>
+            <input type="text" class="form-control" id="licenseEmpresaInput" placeholder="Ej: Bodega La Esperanza" autocomplete="off">
+            <div class="form-hint">Aparecerá en el sistema como identificación de licencia</div>
+          </div>
           <div id="licenseActivateMsg"></div>
         </div>
         <div class="modal-footer">
@@ -275,6 +281,7 @@ const License = {
     document.body.appendChild(modal);
 
     const input = document.getElementById('licenseKeyInput');
+    const empresaInput = document.getElementById('licenseEmpresaInput');
     const msgEl = document.getElementById('licenseActivateMsg');
 
     document.getElementById('closeLicenseModal').addEventListener('click', () => modal.remove());
@@ -301,6 +308,7 @@ const License = {
         clave = input.textContent || '';
       }
       clave = (clave || '').trim().toUpperCase().replace(/\s+/g, '');
+      const empresa = empresaInput.value.trim();
 
       if (!clave) {
         msgEl.innerHTML = '<div class="alert alert-danger mt-2"><span>⚠️</span><div>Ingresa una clave válida (ej: PDV-VIP-ABCD-1234-EFGH-5678)</div></div>';
@@ -308,11 +316,17 @@ const License = {
         return;
       }
 
+      if (!empresa) {
+        msgEl.innerHTML = '<div class="alert alert-danger mt-2"><span>⚠️</span><div>Ingresa el nombre de tu empresa</div></div>';
+        empresaInput.focus();
+        return;
+      }
+
       const btn = document.getElementById('btnActivateLicense');
       btn.disabled = true;
       btn.textContent = 'Validando...';
 
-      const result = await License.activate(clave);
+      const result = await License.activate(clave, empresa);
 
       if (result.ok) {
         msgEl.innerHTML = `<div class="alert alert-success mt-2"><span>✅</span><div>${Utils.escapeHtml(result.mensaje)}</div></div>`;
