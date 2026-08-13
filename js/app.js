@@ -217,6 +217,7 @@ const App = {
           <div class="stat-info">
             <h3>${Utils.formatCurrency(totalHoy)}</h3>
             <p>Ventas Hoy</p>
+            ${Config.get('tasaDolar') > 0 ? `<p style="font-size:12px;color:var(--success);margin:0">${Utils.formatCurrencyBs(totalHoy, Config.get('tasaDolar'))}</p>` : ''}
           </div>
         </div>
         <div class="stat-card">
@@ -229,9 +230,11 @@ const App = {
         <div class="stat-card">
           <div class="stat-icon yellow">📦</div>
           <div class="stat-info">
-            <h3>${productos.length}</h3>
-            <p>Productos</p>
+            <h3>${Utils.formatCurrency(totalInventario)}</h3>
+            <p>Valor Inventario</p>
+            ${Config.get('tasaDolar') > 0 ? `<p style="font-size:12px;color:var(--success);margin:0">${Utils.formatCurrencyBs(totalInventario, Config.get('tasaDolar'))}</p>` : ''}
           </div>
+        </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon red">⚠️</div>

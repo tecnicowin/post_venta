@@ -71,14 +71,14 @@ const Config = {
 
         <div class="card mt-4">
           <div class="card-header">
-            <h3>Configuración de IVA y Tasa del Dólar</h3>
+            <h3>Tasa BCV y Configuración Fiscal</h3>
           </div>
           <div class="card-body">
             <div class="form-row">
               <div class="form-group">
-                <label class="form-label">Tasa del Dólar ($)</label>
-                <input type="number" class="form-control" name="tasaDolar" value="${this.data.tasaDolar}" step="0.01" min="0">
-                <div class="form-hint">Actualizar antes de abrir caja cada día</div>
+                <label class="form-label">Tasa BCV del Día ($ → Bs)</label>
+                <input type="number" class="form-control" name="tasaDolar" value="${this.data.tasaDolar}" step="0.01" min="0" style="font-size:18px;font-weight:700;color:var(--success)">
+                <div class="form-hint">Tasa de cambio del Banco Central de Venezuela. Actualiza diariamente antes de abrir caja.</div>
               </div>
               <div class="form-group">
                 <label class="form-label">IVA 16%</label>
