@@ -7,3 +7,10 @@ dist/
 *.dmg
 *.AppImage
 electron/node_modules/
+tools/licensing-electron/node_modules/
+tools/build-licenses/
+Portable Punto de Venta/
+PuntoDeVenta-Portable.zip
+GeneradorLicencias-Portable.zip
+temp-compress/
+electron/package-lock.json

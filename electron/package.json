@@ -7,8 +7,7 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win --portable",
-    "build-installer": "electron-builder --win nsis"
+    "build": "electron-builder --win --portable"
   },
   "build": {
     "appId": "com.tecnicowin.puntodeventa",
@@ -32,36 +31,34 @@
       "!../Sistema.txt",
       "!../generate-icons.js",
       "!../updates.json",
-      "!../.gitignore"
+      "!../.gitignore",
+      "!../cloudflare-worker/**"
     ],
+    "asar": true,
+    "asarUnpack": [],
     "win": {
       "target": [
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
-      "icon": "../assets/icons/icon-192.png",
-      "artifactName": "PuntoDeVenta.${ext}"
+      "icon": "../assets/icons/icon-512.png",
+      "artifactName": "PuntoDeVenta.${ext}",
+      "sign": false,
+      "signingHashAlgorithms": []
     },
     "portable": {
       "artifactName": "PuntoDeVenta.${ext}"
     },
-    "nsis": {
-      "oneClick": true,
-      "perMachine": false,
-      "allowToChangeInstallationDirectory": false,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "Punto de Venta",
-      "artifactName": "PuntoDeVenta-Setup.${ext}"
-    }
-  },
-  "dependencies": {
-    "electron-updater": "^6.3.0"
+    "compression": "maximum",
+    "forceCodeSigning": false
   },
   "devDependencies": {
     "electron": "^33.0.0",
-    "electron-builder": "^25.0.0"
+    "electron-builder": "^25.0.0",
+    "electron-packager": "^17.1.2"
   }
 }
