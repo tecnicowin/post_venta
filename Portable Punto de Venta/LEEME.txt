@@ -1,0 +1,33 @@
+========================================
+  PORTABLE PUNTO DE VENTA v1.0
+  Sistema de Facturación
+========================================
+
+CONTENIDO:
+  - PuntoDeVenta.exe     → App principal (doble clic para abrir)
+  - data/                → Carpeta de datos (se crea automáticamente)
+  - Generador Licencias/ → Herramienta para generar licencias
+
+INSTALAR:
+  1. Copia esta carpeta a donde quieras (USB, escritorio, etc.)
+  2. Ejecuta "PuntoDeVenta.exe" o "Iniciar Punto de Venta.bat"
+  3. No necesita instalación. No deja rastro en el equipo.
+
+DATOS:
+  - Los datos se guardan en la carpeta "data" junto al exe
+  - Si copias la carpeta completa, conservas todos los datos
+  - Para hacer backup: copia la carpeta "data" a un lugar seguro
+
+GENERADOR DE LICENCIAS:
+  - Abre la carpeta "Generador Licencias"
+  - Ejecuta "GeneradorLicencias.exe"
+  - Genera claves VIP (vitalicias) o PRO (anuales)
+  - No deja rastro al cerrar la app
+
+NOTA:
+  - El Generador de Licencias es temporal: se borra el
+    historial al cerrar la app (sin rastro en el equipo)
+  - Para compartir: comprime la carpeta en .zip y envíala
+    por WhatsApp o correo
+
+Desarrollado por Tecnicowin

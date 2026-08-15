@@ -58,6 +58,7 @@ const Reports = {
     if (tabText === 'Resumen') this.renderResumen();
     else if (tabText === 'Compras vs Ventas') this.renderComprasVentas();
     else if (tabText === 'Flujo de Efectivo') this.renderFlujoEfectivo();
+    else if (tabText === 'Bitácora') this.renderBitacora();
   },
 
   filterByDate(items, dateField = 'createdAt') {

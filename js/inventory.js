@@ -108,6 +108,7 @@ const Inventory = {
       this.filteredItems = this.items.filter(p =>
         p.descripcion.toLowerCase().includes(q) ||
         (p.tipo && p.tipo.toLowerCase().includes(q)) ||
+        (p.codigoBarras && p.codigoBarras.toLowerCase().includes(q)) ||
         (p.categoriaId && this.getCatName(p.categoriaId).toLowerCase().includes(q))
       );
     }
@@ -153,7 +154,7 @@ const Inventory = {
       { label: 'Descripción', key: 'descripcion', render: (row) => `
         <div>
           <div class="font-bold">${UI.escapeHtml(row.descripcion)}</div>
-          ${row.codigoBarras ? `<div class="text-muted" style="font-size:10px">Barcode: ${UI.escapeHtml(row.codigoBarras)}</div>` : ''}
+          ${row.codigoBarras ? `<div style="font-size:11px;color:var(--primary);font-family:monospace">📋 ${UI.escapeHtml(row.codigoBarras)}</div>` : ''}
           ${row.tipo ? `<div class="text-muted" style="font-size:11px">${UI.escapeHtml(row.tipo)}</div>` : ''}
         </div>`
       },
@@ -211,19 +212,18 @@ const Inventory = {
       <form id="productForm">
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Descripción <span class="required">*</span></label>
-            <input type="text" class="form-control" name="descripcion" value="${product ? UI.escapeHtml(product.descripcion) : ''}" required>
+            <label class="form-label">Código <span class="required">*</span></label>
+            <input type="text" class="form-control" name="codigoBarras" value="${product ? UI.escapeHtml(product.codigoBarras || '') : ''}" placeholder="Código del producto para buscar">
           </div>
           <div class="form-group">
             <label class="form-label">Tipo</label>
             <input type="text" class="form-control" name="tipo" value="${product ? UI.escapeHtml(product.tipo || '') : ''}" placeholder="Ej: Alimento, Bebida...">
           </div>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Código de Barras</label>
-            <input type="text" class="form-control" name="codigoBarras" value="${product ? UI.escapeHtml(product.codigoBarras || '') : ''}" placeholder="SKU o código de barras">
-          </div>
+        <div class="form-group">
+          <label class="form-label">Descripción <span class="required">*</span></label>
+          <input type="text" class="form-control" name="descripcion" value="${product ? UI.escapeHtml(product.descripcion) : ''}" required>
+        </div>
           <div class="form-group">
             <label class="form-label">Categoría</label>
             <select class="form-control" name="categoriaId" id="productCategory">

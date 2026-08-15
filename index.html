@@ -56,7 +56,7 @@
           <div class="flex items-center justify-between mb-4">
             <h2>Inventario</h2>
             <div class="flex gap-2 items-center">
-              <div class="search-box"><span class="icon">🔍</span><input type="text" class="form-control" placeholder="Buscar..." id="inventorySearch" oninput="Inventory.filter(this.value)"></div>
+              <div class="search-box"><span class="icon">🔍</span><input type="text" class="form-control" placeholder="Buscar nombre, código..." id="inventorySearch" oninput="Inventory.filter(this.value)"></div>
               <select class="form-control" id="categoryFilter" style="width:auto" onchange="Inventory.filterByCategory(this.value)"><option value="">Todas</option></select>
               <button class="btn btn-primary" onclick="Categories.showForm()">+ Categoría</button>
               <button class="btn btn-primary" onclick="Inventory.showForm()">+ Producto</button>

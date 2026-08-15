@@ -235,7 +235,6 @@ const App = {
             ${Config.get('tasaDolar') > 0 ? `<p style="font-size:12px;color:var(--success);margin:0">${Utils.formatCurrencyBs(totalInventario, Config.get('tasaDolar'))}</p>` : ''}
           </div>
         </div>
-        </div>
         <div class="stat-card">
           <div class="stat-icon red">⚠️</div>
           <div class="stat-info">

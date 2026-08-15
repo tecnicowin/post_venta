@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generador de Licencias - Punto de Venta</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .container { width: 100%; max-width: 600px; padding: 20px; }
+    .card { background: #1e293b; border-radius: 12px; padding: 32px; border: 1px solid #334155; }
+    h1 { font-size: 24px; margin-bottom: 8px; }
+    .subtitle { color: #94a3b8; margin-bottom: 24px; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: #cbd5e1; }
+    input, select { width: 100%; padding: 10px 14px; background: #0f172a; border: 1px solid #475569; border-radius: 8px; color: #e2e8f0; font-size: 14px; }
+    input:focus, select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
+    .btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: #3b82f6; color: white; width: 100%; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-copy { background: #10b981; color: white; margin-top: 12px; width: 100%; }
+    .btn-copy:hover { background: #059669; }
+    .btn-whatsapp { background: #25d366; color: white; margin-top: 8px; width: 100%; }
+    .btn-whatsapp:hover { background: #1da851; }
+    .result { margin-top: 24px; padding: 20px; background: #0f172a; border-radius: 8px; border: 1px solid #334155; display: none; }
+    .result.show { display: block; }
+    .license-key { font-family: 'Courier New', monospace; font-size: 18px; color: #22d3ee; word-break: break-all; margin: 12px 0; padding: 12px; background: #1e293b; border-radius: 6px; border: 1px solid #475569; text-align: center; }
+    .info { display: flex; gap: 12px; margin-top: 12px; }
+    .info-item { flex: 1; padding: 10px; background: #1e293b; border-radius: 6px; text-align: center; }
+    .info-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; }
+    .info-value { font-size: 16px; font-weight: 600; margin-top: 4px; }
+    .history { margin-top: 24px; }
+    .history h3 { font-size: 16px; margin-bottom: 12px; color: #94a3b8; }
+    .history-list { max-height: 300px; overflow-y: auto; }
+    .history-item { padding: 10px; background: #1e293b; border-radius: 6px; margin-bottom: 8px; border: 1px solid #334155; font-size: 13px; cursor: pointer; }
+    .history-item:hover { border-color: #3b82f6; }
+    .history-key { font-family: monospace; color: #22d3ee; }
+    .history-meta { color: #94a3b8; margin-top: 4px; font-size: 12px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .badge-vip { background: #065f46; color: #6ee7b7; }
+    .badge-pro { background: #1e3a5f; color: #93c5fd; }
+    .section-title { font-size: 14px; color: #64748b; margin-top: 24px; margin-bottom: 12px; border-top: 1px solid #334155; padding-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>🔑 Generador de Licencias</h1>
+      <p class="subtitle">Herramienta local para generar claves de licencia</p>
+
+      <div class="form-group">
+        <label>Tipo de Licencia</label>
+        <select id="tipo">
+          <option value="VIP">🟢 Vitalicia ($50)</option>
+          <option value="PRO">🔵 PRO Anual ($30 primer año)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Nombre de la Empresa / Cliente</label>
+        <input type="text" id="empresa" placeholder="Ej: Bodega La Esperanza">
+      </div>
+
+      <div class="form-group">
+        <label>Email del Cliente</label>
+        <input type="email" id="email" placeholder="cliente@email.com">
+      </div>
+
+      <div class="form-group" id="proExpiraGroup">
+        <label>Fecha de Expiración (PRO)</label>
+        <input type="date" id="expira">
+      </div>
+
+      <button class="btn btn-primary" id="btnGenerate">Generar Licencia</button>
+
+      <div class="result" id="result">
+        <div style="text-align:center;color:#10b981;font-size:24px">✅</div>
+        <div style="text-align:center;margin-top:8px;font-weight:600">Licencia generada</div>
+        <div class="license-key" id="generatedKey"></div>
+        <div class="info">
+          <div class="info-item">
+            <div class="info-label">Tipo</div>
+            <div class="info-value" id="resultTipo"></div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Expira</div>
+            <div class="info-value" id="resultExpira"></div>
+          </div>
+        </div>
+        <div class="info-item" style="margin-top:8px">
+          <div class="info-label">Licenciado a</div>
+          <div class="info-value" id="resultEmpresa" style="color:#22d3ee"></div>
+        </div>
+        <button class="btn btn-copy" id="btnCopy">📋 Copiar Clave</button>
+        <button class="btn btn-whatsapp" id="btnWhatsApp">📱 Enviar por WhatsApp</button>
+      </div>
+
+      <div class="section-title">Historial de Licencias Generadas</div>
+      <div id="historyNote" style="color:#64748b;font-size:11px;margin-bottom:8px;text-align:center"> temporal (se borra al cerrar la app)</div>
+      <div class="history-list" id="historyList">
+        <p style="color:#64748b;font-size:13px;text-align:center;padding:20px">Sin licencias generadas aún</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const HISTORY_KEY = 'pdv_license_history';
+    let lastGenerated = null;
+
+    function loadHistory() {
+      try {
+        return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+      } catch (e) { return []; }
+    }
+
+    function saveHistory(history) {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    }
+
+    function renderHistory() {
+      const history = loadHistory();
+      const container = document.getElementById('historyList');
+      if (history.length === 0) {
+        container.innerHTML = '<p style="color:#64748b;font-size:13px;text-align:center;padding:20px">Sin licencias generadas aún</p>';
+        return;
+      }
+      container.innerHTML = history.slice().reverse().map((item, i) => `
+        <div class="history-item" onclick="copyToClipboard('${item.clave}')">
+          <div><span class="badge badge-${item.tipo.toLowerCase()}">${item.tipo}</span> <span class="history-key">${item.clave}</span></div>
+          <div class="history-meta">${item.empresa || ''} ${item.email ? '— ' + item.email : ''} — ${new Date(item.fecha).toLocaleString('es-VE')}</div>
+        </div>
+      `).join('');
+    }
+
+    function generateKey(tipo) {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      const seg = () => Array.from({length:4}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+      const seq = Math.floor(Math.random()*9000+1000);
+      return `PDV-${tipo}-${seg()}-${seq}-${seg()}-${seg()}`;
+    }
+
+    function getExpiraDate() {
+      const now = new Date();
+      return new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()).toISOString().split('T')[0];
+    }
+
+    document.getElementById('expira').value = getExpiraDate();
+
+    document.getElementById('tipo').addEventListener('change', (e) => {
+      document.getElementById('proExpiraGroup').style.display = e.target.value === 'VIP' ? 'none' : 'block';
+    });
+    document.getElementById('proExpiraGroup').style.display = 'none';
+
+    document.getElementById('btnGenerate').addEventListener('click', () => {
+      const tipo = document.getElementById('tipo').value;
+      const empresa = document.getElementById('empresa').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const expira = document.getElementById('expira').value;
+
+      const clave = generateKey(tipo);
+
+      const record = { clave, tipo, empresa, email, expira: tipo === 'PRO' ? expira : null, fecha: new Date().toISOString() };
+      const history = loadHistory();
+      history.push(record);
+      saveHistory(history);
+
+      lastGenerated = record;
+
+      document.getElementById('generatedKey').textContent = clave;
+      document.getElementById('resultTipo').textContent = tipo === 'VIP' ? 'Vitalicia' : 'PRO Anual';
+      document.getElementById('resultExpira').textContent = tipo === 'VIP' ? 'Sin expiración' : expira;
+      document.getElementById('resultEmpresa').textContent = empresa || 'No especificada';
+      document.getElementById('result').classList.add('show');
+
+      renderHistory();
+    });
+
+    function copyToClipboard(text) {
+      if (window.electronAPI && window.electronAPI.copyToClipboard) {
+        window.electronAPI.copyToClipboard(text);
+        alert('Clave copiada al portapapeles:\n' + text);
+        return;
+      }
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Clave copiada al portapapeles:\n' + text);
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        alert('Clave copiada al portapapeles:\n' + text);
+      });
+    }
+
+    document.getElementById('btnCopy').addEventListener('click', () => {
+      if (lastGenerated) copyToClipboard(lastGenerated.clave);
+    });
+
+    document.getElementById('btnWhatsApp').addEventListener('click', () => {
+      if (!lastGenerated) return;
+      const tipo = lastGenerated.tipo === 'VIP' ? 'Vitalicia' : 'PRO';
+      const empresa = lastGenerated.empresa ? `Empresa: ${lastGenerated.empresa}\n` : '';
+      const msg = encodeURIComponent(
+        `Hola! Tu licencia Punto de Venta está lista:\n\n` +
+        empresa +
+        `Tipo: ${tipo}\n` +
+        `Clave: ${lastGenerated.clave}\n` +
+        (lastGenerated.expira ? `Expira: ${lastGenerated.expira}\n` : '') +
+        `\nPara activarla: Abre la app > Configuración > Activar Licencia > Pega la clave.`
+      );
+      const url = `https://wa.me/?text=${msg}`;
+      if (window.electronAPI && window.electronAPI.openWhatsApp) {
+        window.electronAPI.openWhatsApp(url);
+      } else {
+        window.open(url, '_blank');
+      }
+    });
+
+    renderHistory();
+  </script>
+</body>
+</html>

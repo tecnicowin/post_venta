@@ -113,6 +113,7 @@ const Purchases = {
           await Inventory.add({
             descripcion: item.descripcion,
             tipo: item.tipo || '',
+            codigoBarras: item.codigo || '',
             categoriaId: item.categoriaId || '',
             cantidadExistencia: item.cantidad,
             stockMinimo: 0,
@@ -286,7 +287,7 @@ const Purchases = {
                 <thead>
                   <tr>
                     <th style="min-width:160px">Descripción</th>
-                    <th style="width:90px">Tipo</th>
+                    <th style="width:100px">Código</th>
                     <th style="width:60px">Cant.</th>
                     <th style="width:90px">P. Compra</th>
                     <th style="width:90px">Ganancia %</th>
@@ -415,6 +416,7 @@ const Purchases = {
     this._editingItems.push({
       productoId: '',
       descripcion: '',
+      codigo: '',
       tipo: '',
       categoriaId: '',
       cantidad: 1,
@@ -457,6 +459,37 @@ const Purchases = {
     this.recalcAll();
   },
 
+  async searchProductByCode(idx, code) {
+    if (!code || !code.trim()) return;
+    const codeTrimmed = code.trim().toLowerCase();
+    const found = Inventory.items.find(p =>
+      p.activo && (
+        (p.codigoBarras && p.codigoBarras.toLowerCase() === codeTrimmed) ||
+        (p.descripcion && p.descripcion.toLowerCase() === codeTrimmed) ||
+        (p.tipo && p.tipo.toLowerCase() === codeTrimmed)
+      )
+    );
+    if (found) {
+      const item = this._editingItems[idx];
+      if (!item) return;
+      item.productoId = found.id;
+      item.descripcion = found.descripcion;
+      item.codigo = found.codigoBarras || '';
+      item.tipo = found.tipo || '';
+      item.categoriaId = found.categoriaId || '';
+      item.iva = found.iva || '16';
+      item.precioDetal = found.precioDetal || 0;
+      item.precioMayor = found.precioMayor || 0;
+      if (found.margenGanancia) item.margenGanancia = found.margenGanancia;
+      if (found.costoCompra && !item.precio) item.precio = found.costoCompra;
+      UI.showToast(`Producto encontrado: ${found.descripcion}`, 'success');
+      this.renderDetailRows();
+      this.recalcAll();
+    } else {
+      UI.showToast('Código no encontrado. Puedes escribir la descripción para crear uno nuevo.', 'info');
+    }
+  },
+
   recalcItemVenta(idx) {
     const item = this._editingItems[idx];
     if (!item) return;
@@ -480,8 +513,9 @@ const Purchases = {
               onchange="Purchases.updateItemField(${idx}, 'descripcion', this.value)">
           </td>
           <td class="input-cell">
-            <input type="text" value="${UI.escapeHtml(item.tipo || '')}" placeholder="Tipo"
-              onchange="Purchases.updateItemField(${idx}, 'tipo', this.value)">
+            <input type="text" value="${UI.escapeHtml(item.codigo || '')}" placeholder="Código"
+              onblur="Purchases.searchProductByCode(${idx}, this.value)"
+              onkeydown="if(event.key==='Enter'){Purchases.searchProductByCode(${idx}, this.value);event.preventDefault();}">
           </td>
           <td class="input-cell">
             <input type="number" value="${item.cantidad}" min="1"

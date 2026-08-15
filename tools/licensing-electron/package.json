@@ -1,0 +1,43 @@
+{
+  "name": "generador-licencias-pdv",
+  "version": "1.0.0",
+  "description": "Generador de Licencias - Punto de Venta",
+  "main": "main.js",
+  "author": "Tecnicowin",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --portable"
+  },
+  "build": {
+    "appId": "com.tecnicowin.generadorlicencias",
+    "productName": "GeneradorLicencias",
+    "directories": {
+      "output": "../build-licenses"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "generador-licencias.html"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "../../assets/icons/icon-512.png",
+      "artifactName": "GeneradorLicencias.${ext}"
+    },
+    "portable": {
+      "artifactName": "GeneradorLicencias.${ext}"
+    },
+    "compression": "maximum"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}

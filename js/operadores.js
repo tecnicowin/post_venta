@@ -336,7 +336,7 @@ const Operadores = {
     App.applyRoleAccess();
     App.renderDashboard();
 
-    if (operador.rol === 'admin' && operador.pin === '1234' && !localStorage.getItem('pdv_pin_changed')) {
+    if (operador.rol === 'admin' && operador.pin === await this.hashPin('1234') && !localStorage.getItem('pdv_pin_changed')) {
       setTimeout(() => this.promptChangeDefaultPin(), 1000);
     }
   },
@@ -461,7 +461,8 @@ const Operadores = {
       }
 
       try {
-        const admin = this.items.find(op => op.rol === 'admin' && op.pin === '1234');
+        const hashedDefault = await this.hashPin('1234');
+        const admin = this.items.find(op => op.rol === 'admin' && op.pin === hashedDefault);
         if (admin) {
           const hashedPin = await this.hashPin(newPin);
           await this.update(admin.id, { pin: hashedPin, pinHashed: true });

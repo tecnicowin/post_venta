@@ -12,8 +12,15 @@ const UPDATE_URL = 'https://raw.githubusercontent.com/tecnicowin/post_venta/main
 let mainWindow;
 let updateInfo = null;
 
+function getExeDir() {
+  if (isDev) {
+    return path.join(__dirname, '..');
+  }
+  return path.dirname(app.getPath('exe'));
+}
+
 function getDataPath() {
-  const dataPath = path.join(app.getPath('userData'), 'data');
+  const dataPath = path.join(getExeDir(), 'data');
   if (!fs.existsSync(dataPath)) {
     fs.mkdirSync(dataPath, { recursive: true });
   }
@@ -295,6 +302,35 @@ function createWindow() {
 
   ipcMain.on('check-updates', () => {
     checkForUpdates(false);
+  });
+
+  ipcMain.handle('export-data', async (event, json) => {
+    try {
+      const dataPath = getDataPath();
+      const backupFile = path.join(dataPath, 'backup_pdv.json');
+      fs.writeFileSync(backupFile, json, 'utf8');
+      return { ok: true, path: backupFile };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('import-data', async () => {
+    try {
+      const dataPath = getDataPath();
+      const backupFile = path.join(dataPath, 'backup_pdv.json');
+      if (fs.existsSync(backupFile)) {
+        const data = fs.readFileSync(backupFile, 'utf8');
+        return { ok: true, data };
+      }
+      return { ok: false, error: 'No hay backup encontrado' };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('get-data-path', () => {
+    return getDataPath();
   });
 }
 

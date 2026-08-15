@@ -61,7 +61,7 @@ const Categories = {
 
     let html = '<div class="grid grid-3">';
     this.items.forEach(cat => {
-      const productCount = this.items.length;
+      const productCount = Inventory.items.filter(p => p.categoriaId === cat.id).length;
       html += `
         <div class="card" style="border-left: 4px solid ${cat.color}">
           <div class="card-body">
