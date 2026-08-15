@@ -1,0 +1,14 @@
+{
+  "name": "punto-de-venta-installer",
+  "version": "1.0.0",
+  "description": "Instalador Punto de Venta",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-packager . \"Instalar Punto de Venta\" --platform=win32 --arch=x64 --out=../../dist --overwrite --ignore=\"node_modules\" --ignore=\".git\" --asar"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-packager": "^17.0.0"
+  }
+}

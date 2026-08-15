@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instalador Punto de Venta</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .draggable {
+      -webkit-app-region: drag;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 40px;
+      z-index: 100;
+    }
+
+    .container {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 50px 40px 30px;
+    }
+
+    .screen { display: none; flex-direction: column; height: 100%; }
+    .screen.active { display: flex; }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .logo {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 32px;
+      font-weight: 800;
+      color: white;
+      box-shadow: 0 10px 40px rgba(37, 99, 235, 0.4);
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #f8fafc;
+    }
+
+    .header p {
+      color: #94a3b8;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .content { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+    .path-selector {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .path-selector label {
+      display: block;
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+
+    .path-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .path-input {
+      flex: 1;
+      background: #0f172a;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #e2e8f0;
+      font-size: 13px;
+      font-family: 'Consolas', monospace;
+    }
+
+    .path-input:focus { outline: none; border-color: #3b82f6; }
+
+    .btn-browse {
+      background: #334155;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 10px 16px;
+      color: #e2e8f0;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+      -webkit-app-region: no-drag;
+    }
+
+    .btn-browse:hover { background: #475569; }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-app-region: no-drag;
+    }
+
+    .checkbox-row:hover { border-color: #3b82f6; }
+
+    .checkbox-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #3b82f6;
+      cursor: pointer;
+    }
+
+    .checkbox-row span {
+      font-size: 14px;
+      color: #cbd5e1;
+    }
+
+    .info-box {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .info-box .icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+    .info-box .text {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: auto;
+      padding-top: 20px;
+      -webkit-app-region: no-drag;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 14px 24px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 30px rgba(37, 99, 235, 0.5); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-secondary {
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+    }
+
+    .btn-secondary:hover { background: #334155; color: #e2e8f0; }
+
+    .btn-success {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-success:hover { transform: translateY(-1px); box-shadow: 0 6px 30px rgba(16, 185, 129, 0.5); }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* Progress Screen */
+    .progress-content { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+
+    .progress-icon {
+      font-size: 56px;
+      margin-bottom: 24px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .progress-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #f8fafc;
+    }
+
+    .progress-subtitle {
+      font-size: 14px;
+      color: #94a3b8;
+      margin-bottom: 30px;
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      max-width: 360px;
+      margin-bottom: 20px;
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: #1e293b;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #3b82f6, #2563eb);
+      border-radius: 10px;
+      transition: width 0.4s ease;
+    }
+
+    .progress-percent {
+      text-align: center;
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 10px;
+    }
+
+    .steps-list {
+      width: 100%;
+      max-width: 360px;
+      margin-top: 20px;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #1e293b;
+      opacity: 0.4;
+      transition: opacity 0.3s;
+    }
+
+    .step-item.active { opacity: 1; }
+    .step-item.done { opacity: 0.7; }
+
+    .step-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #334155;
+      flex-shrink: 0;
+      transition: all 0.3s;
+    }
+
+    .step-item.active .step-dot { background: #3b82f6; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+    .step-item.done .step-dot { background: #10b981; }
+
+    .step-text {
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    .step-item.active .step-text { color: #e2e8f0; }
+
+    /* Complete Screen */
+    .complete-content { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+
+    .checkmark-circle {
+      width: 90px;
+      height: 90px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 44px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 40px rgba(16, 185, 129, 0.4);
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .complete-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #f8fafc;
+    }
+
+    .complete-subtitle {
+      font-size: 14px;
+      color: #94a3b8;
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    .complete-path {
+      font-family: 'Consolas', monospace;
+      font-size: 12px;
+      color: #64748b;
+      background: #1e293b;
+      padding: 8px 16px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      word-break: break-all;
+    }
+
+    .complete-buttons {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      max-width: 400px;
+      -webkit-app-region: no-drag;
+    }
+
+    /* Error */
+    .error-box {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 16px;
+      display: none;
+    }
+
+    .error-box .icon { font-size: 16px; color: #ef4444; }
+    .error-box .text { font-size: 13px; color: #fca5a5; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="draggable"></div>
+
+  <div class="container">
+    <!-- Screen 1: Welcome -->
+    <div class="screen active" id="screen-welcome">
+      <div class="header">
+        <div class="logo">PdV</div>
+        <h1>Punto de Venta</h1>
+        <p>Sistema de Facturacion Portable</p>
+      </div>
+
+      <div class="content">
+        <div class="info-box">
+          <span class="icon">📦</span>
+          <span class="text">
+            El sistema se instalara en tu equipo. Puedes ejecutarlo desde el escritorio sin necesidad de internet.
+          </span>
+        </div>
+
+        <div class="path-selector">
+          <label>Carpeta de instalacion:</label>
+          <div class="path-row">
+            <input type="text" class="path-input" id="installPath" readonly>
+            <button class="btn-browse" id="btnBrowse">Examinar</button>
+          </div>
+        </div>
+
+        <div class="checkbox-row" id="shortcutRow">
+          <input type="checkbox" id="createShortcut" checked>
+          <span>Crear acceso directo en el escritorio</span>
+        </div>
+      </div>
+
+      <div class="buttons">
+        <button class="btn btn-secondary" id="btnCancel">Cancelar</button>
+        <button class="btn btn-primary" id="btnInstall">Instalar ▸</button>
+      </div>
+    </div>
+
+    <!-- Screen 2: Progress -->
+    <div class="screen" id="screen-progress">
+      <div class="progress-content">
+        <div class="progress-icon">⚙️</div>
+        <div class="progress-title">Instalando sistema...</div>
+        <div class="progress-subtitle" id="progressStepText">Preparando instalacion</div>
+
+        <div class="progress-bar-container">
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progressBar"></div>
+          </div>
+          <div class="progress-percent" id="progressPercent">0%</div>
+        </div>
+
+        <div class="steps-list" id="stepsList">
+          <div class="step-item" data-step="0">
+            <div class="step-dot"></div>
+            <span class="step-text">Preparando instalacion</span>
+          </div>
+          <div class="step-item" data-step="1">
+            <div class="step-dot"></div>
+            <span class="step-text">Copiando archivos del sistema</span>
+          </div>
+          <div class="step-item" data-step="2">
+            <div class="step-dot"></div>
+            <span class="step-text">Copiando archivos de la aplicacion</span>
+          </div>
+          <div class="step-item" data-step="3">
+            <div class="step-dot"></div>
+            <span class="step-text">Configurando el sistema</span>
+          </div>
+          <div class="step-item" data-step="4">
+            <div class="step-dot"></div>
+            <span class="step-text">Creando acceso directo</span>
+          </div>
+          <div class="step-item" data-step="5">
+            <div class="step-dot"></div>
+            <span class="step-text">Finalizando instalacion</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 3: Complete -->
+    <div class="screen" id="screen-complete">
+      <div class="complete-content">
+        <div class="checkmark-circle">✓</div>
+        <div class="complete-title">Instalacion completa</div>
+        <div class="complete-subtitle">El sistema se instalo correctamente en tu equipo</div>
+        <div class="complete-path" id="installedPath"></div>
+
+        <div class="complete-buttons">
+          <button class="btn btn-secondary" id="btnClose">Cerrar</button>
+          <button class="btn btn-success" id="btnRun">Ejecutar ahora ▸</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Box -->
+    <div class="error-box" id="errorBox">
+      <span class="icon">❌</span>
+      <span class="text" id="errorText"></span>
+    </div>
+  </div>
+
+  <script>
+    const { installerAPI } = window;
+
+    let selectedPath = '';
+    let createShortcutChecked = true;
+
+    async function init() {
+      selectedPath = await installerAPI.getDefaultPath();
+      document.getElementById('installPath').value = selectedPath;
+    }
+
+    init();
+
+    document.getElementById('btnBrowse').addEventListener('click', async () => {
+      const dir = await installerAPI.selectDirectory();
+      if (dir) {
+        selectedPath = dir;
+        document.getElementById('installPath').value = dir;
+      }
+    });
+
+    document.getElementById('btnCancel').addEventListener('click', () => {
+      window.close();
+    });
+
+    document.getElementById('createShortcut').addEventListener('change', (e) => {
+      createShortcutChecked = e.target.checked;
+    });
+
+    document.getElementById('btnInstall').addEventListener('click', async () => {
+      showScreen('screen-progress');
+
+      installerAPI.onProgress((step) => {
+        document.getElementById('progressStepText').textContent = step.name;
+        document.getElementById('progressBar').style.width = step.progress + '%';
+        document.getElementById('progressPercent').textContent = step.progress + '%';
+
+        const stepIndex = ['Preparando instalacion', 'Copiando archivos del sistema', 'Copiando archivos de la aplicacion', 'Configurando el sistema', 'Creando acceso directo', 'Finalizando instalacion'].indexOf(step.name);
+
+        document.querySelectorAll('.step-item').forEach((item, i) => {
+          item.classList.remove('active', 'done');
+          if (i < stepIndex) item.classList.add('done');
+          if (i === stepIndex) item.classList.add('active');
+        });
+      });
+
+      const result = await installerAPI.installApp({
+        installPath: selectedPath,
+        createShortcut: createShortcutChecked
+      });
+
+      if (result.ok) {
+        document.getElementById('installedPath').textContent = selectedPath;
+        showScreen('screen-complete');
+      } else {
+        showError(result.error);
+        showScreen('screen-welcome');
+      }
+    });
+
+    document.getElementById('btnClose').addEventListener('click', () => {
+      window.close();
+    });
+
+    document.getElementById('btnRun').addEventListener('click', async () => {
+      await installerAPI.launchApp(selectedPath);
+      window.close();
+    });
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      document.getElementById('errorBox').style.display = 'none';
+    }
+
+    function showError(msg) {
+      const box = document.getElementById('errorBox');
+      document.getElementById('errorText').textContent = msg;
+      box.style.display = 'flex';
+    }
+  </script>
+</body>
+</html>
