@@ -689,43 +689,36 @@ const Invoice = {
   },
 
   showProductPicker() {
-    const products = Inventory.items.filter(p => p.activo && p.cantidadExistencia > 0);
-
-    let productsHtml = '';
-    products.forEach(p => {
-      const cat = Categories.items.find(c => c.id === p.categoriaId);
-      productsHtml += `
-        <div class="flex items-center justify-between product-picker-item" style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer"
-          data-product-id="${p.id}">
-          <div>
-            <div class="font-bold">${UI.escapeHtml(p.descripcion)}</div>
-            <div class="text-muted" style="font-size:11px">
-              ${cat ? UI.escapeHtml(cat.nombre) + ' | ' : ''}Stock: ${p.cantidadExistencia} | IVA: ${p.iva}%
-            </div>
-          </div>
-          <div class="text-right">
-            <div class="font-bold text-success">${Utils.formatCurrency(p.precioDetal)}</div>
-            <div class="text-muted" style="font-size:11px">Mayor: ${Utils.formatCurrency(p.precioMayor)}</div>
-          </div>
-        </div>`;
-    });
-
-    if (products.length === 0) {
-      productsHtml = '<div class="empty-state"><p>No hay productos disponibles</p></div>';
-    }
-
     const content = `
-      <div class="search-box mb-3" style="max-width:100%">
-        <span class="icon">🔍</span>
-        <input type="text" class="form-control" placeholder="Buscar producto..." id="productSearchInput"
-          style="padding-left:36px">
+      <div class="mb-3">
+        <label class="form-label" style="font-weight:600;font-size:14px">📝 Ingresa el código del producto</label>
+        <div class="flex gap-2">
+          <input type="text" class="form-control" id="invoiceCodeInput" placeholder="Escribe el código y presiona Enter..."
+            style="font-family:monospace;font-size:16px;letter-spacing:2px;padding:12px" autofocus
+            onkeydown="if(event.key==='Enter'){Invoice.searchAndAdd(event.target.value);event.preventDefault();}">
+          <button class="btn btn-primary" onclick="Invoice.searchAndAdd(document.getElementById('invoiceCodeInput').value)">Buscar</button>
+        </div>
+        <div id="invoiceCodeMsg" style="min-height:24px;margin-top:8px"></div>
       </div>
-      <div id="productPickerList" style="max-height:400px;overflow-y:auto">
-        ${productsHtml}
+      <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:8px">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-muted" style="font-size:13px">O busca por nombre:</span>
+        </div>
+        <div class="search-box mb-2" style="max-width:100%">
+          <span class="icon">🔍</span>
+          <input type="text" class="form-control" placeholder="Buscar por nombre..." id="productSearchInput"
+            style="padding-left:36px">
+        </div>
+        <div id="productPickerList" style="max-height:300px;overflow-y:auto"></div>
       </div>
     `;
 
     UI.showModal('Agregar Producto', content, { footer: false, size: 'lg' });
+
+    setTimeout(() => {
+      const codeInput = document.getElementById('invoiceCodeInput');
+      if (codeInput) codeInput.focus();
+    }, 100);
 
     const searchInput = document.getElementById('productSearchInput');
     if (searchInput) {
@@ -747,6 +740,135 @@ const Invoice = {
         }
       });
     }
+  },
+
+  async searchAndAdd(code) {
+    if (!code || !code.trim()) {
+      UI.showToast('Ingresa un código', 'warning');
+      return;
+    }
+    const codeTrimmed = code.trim().toLowerCase();
+    const msgEl = document.getElementById('invoiceCodeMsg');
+
+    const found = Inventory.items.find(p =>
+      p.activo && (
+        (p.codigoBarras && p.codigoBarras.toLowerCase() === codeTrimmed) ||
+        (p.descripcion && p.descripcion.toLowerCase() === codeTrimmed) ||
+        (p.tipo && p.tipo.toLowerCase() === codeTrimmed)
+      )
+    );
+
+    if (found) {
+      if (found.cantidadExistencia <= 0) {
+        if (msgEl) msgEl.innerHTML = `<div class="alert alert-danger" style="margin:0"><span>⚠️</span><div>Sin stock: ${UI.escapeHtml(found.descripcion)}</div></div>`;
+        return;
+      }
+      this.pickProduct(found.id);
+    } else {
+      if (msgEl) msgEl.innerHTML = `<div class="alert alert-warning" style="margin:0"><span>⚠️</span><div>Producto no encontrado. <button class="btn btn-ghost btn-sm" onclick="Invoice.createNewFromCode('${Utils.escapeHtml(code.trim())}')" style="padding:2px 8px;text-decoration:underline">Crear nuevo con código "${Utils.escapeHtml(code.trim())}"</button></div></div>`;
+    }
+  },
+
+  createNewFromCode(code) {
+    UI.closeModal();
+    this.showNewProductForm(code);
+  },
+
+  showNewProductForm(defaultCode = '') {
+    const content = `
+      <form id="newProductInvoiceForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Código <span class="required">*</span></label>
+            <input type="text" class="form-control" name="codigoBarras" value="${defaultCode}" placeholder="Código del producto" style="font-family:monospace">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Descripción <span class="required">*</span></label>
+            <input type="text" class="form-control" name="descripcion" placeholder="Nombre del producto" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Categoría</label>
+            <select class="form-control" name="categoriaId" id="newProdCategory">
+              <option value="">Sin categoría</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">IVA</label>
+            <select class="form-control" name="iva">
+              <option value="16">16%</option>
+              <option value="10">10%</option>
+              <option value="0">0% (Exento)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Costo de Compra ($)</label>
+            <input type="number" class="form-control" name="costoCompra" step="0.01" min="0" placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Margen de Ganancia (%)</label>
+            <input type="number" class="form-control" name="margenGanancia" value="${Config.get('margenGeneral') || 30}" step="1" min="0" max="500">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Precio Detal ($)</label>
+            <input type="number" class="form-control" name="precioDetal" step="0.01" min="0" placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Precio Mayor ($)</label>
+            <input type="number" class="form-control" name="precioMayor" step="0.01" min="0" placeholder="0.00">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Cantidad</label>
+            <input type="number" class="form-control" name="cantidad" value="1" min="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Stock Mínimo</label>
+            <input type="number" class="form-control" name="stockMinimo" value="0" min="0">
+          </div>
+        </div>
+      </form>
+    `;
+
+    UI.showModal('Nuevo Producto', content, {
+      size: 'lg',
+      confirmText: 'Guardar y Agregar',
+      onConfirm: async () => {
+        const data = UI.getFormData('newProductInvoiceForm');
+        if (!data.descripcion) {
+          UI.showToast('La descripción es requerida', 'error');
+          return;
+        }
+        try {
+          const newProduct = await Inventory.add({
+            descripcion: data.descripcion,
+            codigoBarras: data.codigoBarras || '',
+            categoriaId: data.categoriaId || '',
+            iva: data.iva || '16',
+            costoCompra: parseFloat(data.costoCompra) || 0,
+            margenGanancia: parseFloat(data.margenGanancia) || 0,
+            precioDetal: parseFloat(data.precioDetal) || 0,
+            precioMayor: parseFloat(data.precioMayor) || 0,
+            cantidadExistencia: parseFloat(data.cantidad) || 0,
+            stockMinimo: parseFloat(data.stockMinimo) || 0,
+            entradas: parseFloat(data.cantidad) || 0,
+            salidas: 0
+          });
+          this.pickProduct(newProduct.id);
+          UI.showToast('Producto creado y agregado a la factura', 'success');
+        } catch (e) {
+          UI.showToast(e.message, 'error');
+        }
+      }
+    });
+
+    setTimeout(() => Categories.renderSelectOptions('newProdCategory', ''), 100);
   },
 
   filterProducts(query) {
@@ -771,7 +893,7 @@ const Invoice = {
             ${p.codigoBarras ? `<div style="font-size:11px;color:var(--primary);font-family:monospace;font-weight:600">📋 ${UI.escapeHtml(p.codigoBarras)}</div>` : ''}
             <div class="font-bold">${UI.escapeHtml(p.descripcion)}</div>
             <div class="text-muted" style="font-size:11px">
-              ${cat ? UI.escapeHtml(cat.nombre) + ' | ' : ''}${p.tipo ? p.tipo + ' | ' : ''}Stock: ${p.cantidadExistencia} | IVA: ${p.iva}%
+              ${cat ? UI.escapeHtml(cat.nombre) + ' | ' : ''}Stock: ${p.cantidadExistencia} | IVA: ${p.iva}%
             </div>
           </div>
           <div class="text-right">
