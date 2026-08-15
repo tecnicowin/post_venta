@@ -153,8 +153,8 @@ const Inventory = {
     UI.renderTable('inventoryTable', [
       { label: 'Descripción', key: 'descripcion', render: (row) => `
         <div>
+          ${row.codigoBarras ? `<div style="font-size:12px;color:var(--primary);font-family:monospace;font-weight:600">📋 ${UI.escapeHtml(row.codigoBarras)}</div>` : ''}
           <div class="font-bold">${UI.escapeHtml(row.descripcion)}</div>
-          ${row.codigoBarras ? `<div style="font-size:11px;color:var(--primary);font-family:monospace">📋 ${UI.escapeHtml(row.codigoBarras)}</div>` : ''}
           ${row.tipo ? `<div class="text-muted" style="font-size:11px">${UI.escapeHtml(row.tipo)}</div>` : ''}
         </div>`
       },

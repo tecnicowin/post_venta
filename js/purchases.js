@@ -681,7 +681,7 @@ const Purchases = {
       compra.items.forEach(item => {
         itemsHtml += `
           <tr>
-            <td>${UI.escapeHtml(item.descripcion)}</td>
+            <td>${item.codigo ? `<span style="font-family:monospace;color:var(--primary)">[${UI.escapeHtml(item.codigo)}]</span> ` : ''}${UI.escapeHtml(item.descripcion)}</td>
             <td class="text-center">${item.cantidad}</td>
             <td class="text-right">${Utils.formatCurrency(item.precio)}</td>
             <td class="text-center">${item.margenGanancia || 0}%</td>

@@ -458,10 +458,11 @@ const Invoice = {
     let itemsHtml = '';
     inv.items.forEach((item, idx) => {
       const product = Inventory.getById(item.productoId);
+      const codigo = product ? product.codigoBarras : '';
       itemsHtml += `
         <tr>
           <td class="input-cell">
-            <input type="text" value="${UI.escapeHtml(item.descripcion)}" readonly style="background:#f1f5f9">
+            <input type="text" value="${codigo ? '[' + UI.escapeHtml(codigo) + '] ' : ''}${UI.escapeHtml(item.descripcion)}" readonly style="background:#f1f5f9">
           </td>
           <td class="input-cell">
             <select onchange="Invoice.updateItem(${idx}, 'precioTipo', this.value); Invoice.renderFacturaEditor()">
@@ -763,6 +764,7 @@ const Invoice = {
         <div class="flex items-center justify-between product-picker-item" style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer"
           data-product-id="${p.id}">
           <div>
+            ${p.codigoBarras ? `<div style="font-size:11px;color:var(--primary);font-family:monospace;font-weight:600">📋 ${UI.escapeHtml(p.codigoBarras)}</div>` : ''}
             <div class="font-bold">${UI.escapeHtml(p.descripcion)}</div>
             <div class="text-muted" style="font-size:11px">
               ${cat ? UI.escapeHtml(cat.nombre) + ' | ' : ''}${p.tipo ? p.tipo + ' | ' : ''}Stock: ${p.cantidadExistencia} | IVA: ${p.iva}%
