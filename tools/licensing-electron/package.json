@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win --portable"
+    "build": "electron-packager . GeneradorLicencias --platform=win32 --arch=x64 --out=../build-licenses --overwrite --ignore=\"node_modules\" --ignore=\".git\" --asar"
   },
   "build": {
     "appId": "com.tecnicowin.generadorlicencias",
@@ -25,7 +25,9 @@
       "target": [
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "../../assets/icons/icon-512.png",
@@ -37,7 +39,7 @@
     "compression": "maximum"
   },
   "devDependencies": {
-    "electron": "^33.0.0",
-    "electron-builder": "^25.0.0"
+    "electron": "^33.4.11",
+    "electron-packager": "^17.1.2"
   }
 }

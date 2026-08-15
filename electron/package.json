@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win --portable"
+    "build": "electron-packager . PuntoDeVenta --platform=win32 --arch=x64 --out=../build --overwrite --ignore=\"node_modules\" --ignore=\".git\" --asar"
   },
   "build": {
     "appId": "com.tecnicowin.puntodeventa",
