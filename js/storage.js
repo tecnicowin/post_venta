@@ -379,5 +379,54 @@ const Storage = {
     } catch (e) {
       console.warn('Error logging audit:', e);
     }
+  },
+
+  async autoSave() {
+    if (!window.electronAPI || !window.electronAPI.autoSave) return;
+    try {
+      const data = await this.exportAll();
+      const json = JSON.stringify(data);
+      await window.electronAPI.autoSave(json);
+    } catch (e) {
+      console.warn('Auto-save error:', e);
+    }
+  },
+
+  async autoLoad() {
+    if (!window.electronAPI || !window.electronAPI.autoLoad) return false;
+    try {
+      const result = await window.electronAPI.autoLoad();
+      if (result.ok && result.data) {
+        const data = JSON.parse(result.data);
+        const counts = {};
+        for (const [key, storeName] of Object.entries(STORES)) {
+          if (data[key] && Array.isArray(data[key]) && data[key].length > 0) {
+            counts[key] = data[key].length;
+          }
+        }
+        if (Object.keys(counts).length > 0) {
+          await this.importAll(data);
+          console.log('Auto-loaded backup from data/ folder:', counts);
+          return true;
+        }
+      }
+    } catch (e) {
+      console.warn('Auto-load error:', e);
+    }
+    return false;
+  },
+
+  startAutoSave() {
+    setInterval(() => this.autoSave(), 5 * 60 * 1000);
+
+    window.addEventListener('beforeunload', () => {
+      this.autoSave();
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        this.autoSave();
+      }
+    });
   }
 };

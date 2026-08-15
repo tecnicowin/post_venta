@@ -332,6 +332,34 @@ function createWindow() {
   ipcMain.handle('get-data-path', () => {
     return getDataPath();
   });
+
+  ipcMain.handle('auto-save', async (event, json) => {
+    try {
+      const dataPath = getDataPath();
+      const backupFile = path.join(dataPath, 'backup_pdv.json');
+      fs.writeFileSync(backupFile, json, 'utf8');
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('auto-load', async () => {
+    try {
+      const dataPath = getDataPath();
+      const backupFile = path.join(dataPath, 'backup_pdv.json');
+      if (fs.existsSync(backupFile)) {
+        const stat = fs.statSync(backupFile);
+        if (stat.size > 10) {
+          const data = fs.readFileSync(backupFile, 'utf8');
+          return { ok: true, data };
+        }
+      }
+      return { ok: false };
+    } catch (e) {
+      return { ok: false };
+    }
+  });
 }
 
 app.whenReady().then(() => {

@@ -2,6 +2,12 @@ const App = {
   async init() {
     try {
       await Storage.init();
+
+      const loaded = await Storage.autoLoad();
+      if (loaded) {
+        console.log('Backup cargado desde carpeta data/');
+      }
+
       await License.init();
       await Config.load();
       await Categories.load();
@@ -18,6 +24,8 @@ const App = {
       this.setupNavigation();
       this.updateClock();
       setInterval(() => this.updateClock(), 60000);
+
+      Storage.startAutoSave();
 
       const licenseStatus = await License.getStatus();
       this.updateSidebarLicense(licenseStatus);
