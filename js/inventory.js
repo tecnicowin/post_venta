@@ -151,9 +151,11 @@ const Inventory = {
   renderTable() {
     const data = this.currentFilter ? this.filteredItems : this.items;
     UI.renderTable('inventoryTable', [
+      { label: 'Código', key: 'codigoBarras', render: (row) => `
+        <span style="font-family:monospace;font-weight:600;color:var(--primary)">${row.codigoBarras ? UI.escapeHtml(row.codigoBarras) : '<span class="text-muted">-</span>'}</span>`
+      },
       { label: 'Descripción', key: 'descripcion', render: (row) => `
         <div>
-          ${row.codigoBarras ? `<div style="font-size:12px;color:var(--primary);font-family:monospace;font-weight:600">📋 ${UI.escapeHtml(row.codigoBarras)}</div>` : ''}
           <div class="font-bold">${UI.escapeHtml(row.descripcion)}</div>
           ${row.tipo ? `<div class="text-muted" style="font-size:11px">${UI.escapeHtml(row.tipo)}</div>` : ''}
         </div>`

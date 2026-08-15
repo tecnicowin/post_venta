@@ -286,8 +286,8 @@ const Purchases = {
               <table class="invoice-detail-table" id="purchaseDetailTable">
                 <thead>
                   <tr>
-                    <th style="min-width:160px">Descripción</th>
                     <th style="width:100px">Código</th>
+                    <th style="min-width:160px">Descripción</th>
                     <th style="width:60px">Cant.</th>
                     <th style="width:90px">P. Compra</th>
                     <th style="width:90px">Ganancia %</th>
@@ -509,13 +509,13 @@ const Purchases = {
       html += `
         <tr>
           <td class="input-cell">
-            <input type="text" value="${UI.escapeHtml(item.descripcion)}" placeholder="Nombre del producto"
-              onchange="Purchases.updateItemField(${idx}, 'descripcion', this.value)">
-          </td>
-          <td class="input-cell">
             <input type="text" value="${UI.escapeHtml(item.codigo || '')}" placeholder="Código"
               onblur="Purchases.searchProductByCode(${idx}, this.value)"
               onkeydown="if(event.key==='Enter'){Purchases.searchProductByCode(${idx}, this.value);event.preventDefault();}">
+          </td>
+          <td class="input-cell">
+            <input type="text" value="${UI.escapeHtml(item.descripcion)}" placeholder="Nombre del producto"
+              onchange="Purchases.updateItemField(${idx}, 'descripcion', this.value)">
           </td>
           <td class="input-cell">
             <input type="number" value="${item.cantidad}" min="1"

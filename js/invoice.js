@@ -462,7 +462,10 @@ const Invoice = {
       itemsHtml += `
         <tr>
           <td class="input-cell">
-            <input type="text" value="${codigo ? '[' + UI.escapeHtml(codigo) + '] ' : ''}${UI.escapeHtml(item.descripcion)}" readonly style="background:#f1f5f9">
+            <span style="font-family:monospace;font-weight:600;color:var(--primary)">${codigo ? UI.escapeHtml(codigo) : '-'}</span>
+          </td>
+          <td class="input-cell">
+            <input type="text" value="${UI.escapeHtml(item.descripcion)}" readonly style="background:#f1f5f9">
           </td>
           <td class="input-cell">
             <select onchange="Invoice.updateItem(${idx}, 'precioTipo', this.value); Invoice.renderFacturaEditor()">
@@ -499,7 +502,7 @@ const Invoice = {
     });
 
     if (inv.items.length === 0) {
-      itemsHtml = `<tr><td colspan="8" class="text-center text-muted" style="padding:32px">
+      itemsHtml = `<tr><td colspan="9" class="text-center text-muted" style="padding:32px">
         Agrega productos usando el botón de abajo
       </td></tr>`;
     }
@@ -522,6 +525,7 @@ const Invoice = {
             <table class="invoice-detail-table">
               <thead>
                 <tr>
+                  <th style="width:100px">Código</th>
                   <th>Descripción</th>
                   <th style="width:100px">Tipo Precio</th>
                   <th style="width:100px">Precio</th>
