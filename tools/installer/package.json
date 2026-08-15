@@ -5,7 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-packager . \"Instalar Punto de Venta\" --platform=win32 --arch=x64 --out=../../dist --overwrite --ignore=\"node_modules\" --ignore=\".git\" --asar"
+    "build": "electron-packager . \"Instalar Punto de Venta\" --platform=win32 --arch=x64 --out=./build --overwrite --ignore=\"node_modules\" --ignore=\".git\" --asar"
   },
   "devDependencies": {
     "electron": "^33.0.0",
