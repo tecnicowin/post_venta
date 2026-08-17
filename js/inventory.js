@@ -172,7 +172,13 @@ const Inventory = {
       { label: 'Entradas', key: 'entradas', align: 'center' },
       { label: 'Salidas', key: 'salidas', align: 'center' },
       { label: 'Costo', key: 'costoCompra', align: 'right', render: (row) => Utils.formatCurrency(row.costoCompra || 0) },
-      { label: 'Ganancia', key: 'margenGanancia', align: 'center', render: (row) => row.margenGanancia ? `${row.margenGanancia}%` : '-' },
+      { label: 'Ganancia', align: 'center', render: (row) => {
+        if (row.costoCompra > 0 && row.precioDetal > 0) {
+          const ganancia = Math.round(((row.precioDetal - row.costoCompra) / row.costoCompra) * 100);
+          return `<span style="color:var(--success);font-weight:600">${ganancia}%</span>`;
+        }
+        return '<span class="text-muted">-</span>';
+      }},
       { label: 'P. Mayor', key: 'precioMayor', align: 'right', render: (row) => Utils.formatCurrency(row.precioMayor) },
       { label: 'P. Detal', key: 'precioDetal', align: 'right', render: (row) => Utils.formatCurrency(row.precioDetal) },
       { label: 'IVA', key: 'iva', align: 'center', render: (row) => `<span class="badge badge-${row.iva == '0' ? 'success' : row.iva == '10' ? 'warning' : 'info'}">${row.iva}%</span>` },
