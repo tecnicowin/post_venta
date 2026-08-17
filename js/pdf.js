@@ -65,8 +65,8 @@ const PdfGenerator = {
     doc.line(margin, y, formatWidth - margin, y);
     y += 3;
 
-    const colWidths = paperSize === '80mm' ? [30, 14, 10, 10, 16] : [22, 11, 8, 8, 11];
-    const headers = ['DESC', 'PREC', 'DTO', 'CANT', 'TOTAL'];
+    const colWidths = paperSize === '80mm' ? [36, 18, 12, 16] : [26, 14, 10, 11];
+    const headers = ['DESC', 'PREC', 'CANT', 'TOTAL'];
     let x = margin;
     doc.setFontSize(6);
     doc.setFont('helvetica', 'bold');
@@ -95,10 +95,8 @@ const PdfGenerator = {
         x += colWidths[0];
         doc.text(Utils.formatCurrency(item.precio), x + 1, y);
         x += colWidths[1];
-        doc.text(`${item.descuento}%`, x + 1, y);
-        x += colWidths[2];
         doc.text(String(item.cantidad), x + 1, y);
-        x += colWidths[3];
+        x += colWidths[2];
         doc.text(Utils.formatCurrency(item.totalPorRubro), x + 1, y);
         y += 3;
       });
