@@ -76,7 +76,6 @@ const Invoice = {
         descripcion: product.descripcion,
         precio: product.precioDetal,
         precioTipo: 'detal',
-        descuento: 0,
         cantidad: 1,
         subtotal: product.precioDetal,
         iva: product.iva || '16',
@@ -104,8 +103,6 @@ const Invoice = {
       }
     } else if (field === 'cantidad') {
       item.cantidad = parseFloat(value) || 1;
-    } else if (field === 'descuento') {
-      item.descuento = parseFloat(value) || 0;
     } else if (field === 'precio') {
       item.precio = parseFloat(value) || 0;
       if (item.costoCompra > 0) {
@@ -378,7 +375,6 @@ const Invoice = {
           <tr>
             <td>${UI.escapeHtml(item.descripcion)}</td>
             <td class="text-right">${Utils.formatCurrency(item.precio)}</td>
-            <td class="text-center">${item.descuento}%</td>
             <td class="text-center">${item.cantidad}</td>
             <td class="text-right font-bold">${Utils.formatCurrency(item.totalPorRubro)}</td>
           </tr>`;
@@ -410,7 +406,6 @@ const Invoice = {
             <tr>
               <th>Descripción</th>
               <th class="text-right">Precio</th>
-              <th class="text-center">Dto.</th>
               <th class="text-center">Cant.</th>
               <th class="text-right">Total</th>
             </tr>
@@ -487,10 +482,6 @@ const Invoice = {
             ${item.costoCompra > 0 ? `<div style="font-size:10px;color:#64748b">Costo: ${Utils.formatCurrency(item.costoCompra)}</div>` : ''}
           </td>
           <td class="input-cell">
-            <input type="number" value="${item.descuento}" step="0.1" min="0" max="100"
-              onchange="Invoice.updateItem(${idx}, 'descuento', this.value); Invoice.renderFacturaEditor()">
-          </td>
-          <td class="input-cell">
             <input type="number" value="${item.cantidad}" min="1"
               onchange="Invoice.updateItem(${idx}, 'cantidad', this.value); Invoice.renderFacturaEditor()">
           </td>
@@ -502,7 +493,7 @@ const Invoice = {
     });
 
     if (inv.items.length === 0) {
-      itemsHtml = `<tr><td colspan="9" class="text-center text-muted" style="padding:32px">
+      itemsHtml = `<tr><td colspan="8" class="text-center text-muted" style="padding:32px">
         Agrega productos usando el botón de abajo
       </td></tr>`;
     }
@@ -530,7 +521,6 @@ const Invoice = {
                   <th style="width:100px">Tipo Precio</th>
                   <th style="width:100px">Precio</th>
                   <th style="width:90px">Ganancia %</th>
-                  <th style="width:80px">Descuento %</th>
                   <th style="width:80px">Cantidad</th>
                   <th class="text-right" style="width:100px">Total</th>
                   <th style="width:40px"></th>

@@ -57,8 +57,7 @@ const Purchases = {
 
     compra.items.forEach(item => {
       const lineTotal = item.precio * item.cantidad;
-      const descLinea = lineTotal * ((item.descuento || 0) / 100);
-      item.totalLinea = lineTotal - descLinea;
+      item.totalLinea = lineTotal;
       subtotal += item.totalLinea;
 
       if (item.iva === '16') iva16 += item.totalLinea * iva16Rate;
@@ -66,8 +65,7 @@ const Purchases = {
     });
 
     compra.subtotal = subtotal;
-    const descMonto = subtotal * (compra.descuento / 100);
-    compra.baseImponible = subtotal - descMonto;
+    compra.baseImponible = subtotal;
     compra.iva16 = iva16;
     compra.iva10 = iva10;
     compra.totalIva = iva16 + iva10;
@@ -77,8 +75,7 @@ const Purchases = {
   async updateInventory(compra) {
     for (const item of compra.items) {
       const costoCompra = item.precio;
-      const margen = parseFloat(item.margenGanancia) || 0;
-      const precioDetalCalculado = margen > 0 ? costoCompra * (1 + margen / 100) : (item.precioDetal || costoCompra);
+      const precioVenta = item.precioDetal || costoCompra;
 
       if (item.productoId) {
         try {
@@ -88,8 +85,7 @@ const Purchases = {
               cantidadExistencia: product.cantidadExistencia + item.cantidad,
               entradas: (product.entradas || 0) + item.cantidad,
               costoCompra: costoCompra,
-              margenGanancia: margen,
-              precioDetal: precioDetalCalculado,
+              precioDetal: precioVenta,
               precioMayor: item.precioMayor || costoCompra
             });
           } else {
@@ -106,8 +102,7 @@ const Purchases = {
             cantidadExistencia: product.cantidadExistencia + item.cantidad,
             entradas: (product.entradas || 0) + item.cantidad,
             costoCompra: costoCompra,
-            margenGanancia: margen,
-            precioDetal: precioDetalCalculado
+            precioDetal: precioVenta
           });
         } else {
           await Inventory.add({
@@ -120,9 +115,8 @@ const Purchases = {
             entradas: item.cantidad,
             salidas: 0,
             costoCompra: costoCompra,
-            margenGanancia: margen,
             precioMayor: item.precioMayor || costoCompra,
-            precioDetal: precioDetalCalculado,
+            precioDetal: precioVenta,
             iva: item.iva || '16'
           });
         }
@@ -288,11 +282,9 @@ const Purchases = {
                   <tr>
                     <th style="width:100px">Código</th>
                     <th style="min-width:160px">Descripción</th>
-                    <th style="width:60px">Cant.</th>
+                    <th style="width:60px">Cant</th>
                     <th style="width:90px">P. Compra</th>
-                    <th style="width:90px">Ganancia %</th>
                     <th style="width:90px">P. Venta</th>
-                    <th style="width:60px">Dto %</th>
                     <th style="width:60px">IVA</th>
                     <th style="width:90px">Total</th>
                     <th style="width:40px"></th>
@@ -302,7 +294,7 @@ const Purchases = {
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colspan="8"></td>
+                    <td colspan="6"></td>
                     <td class="text-right font-bold" id="purchaseSubtotal">$0.00</td>
                     <td></td>
                   </tr>
@@ -421,9 +413,7 @@ const Purchases = {
       categoriaId: '',
       cantidad: 1,
       precio: 0,
-      margenGanancia: Config.get('margenGeneral') || 30,
       precioDetal: 0,
-      descuento: 0,
       iva: '16',
       totalLinea: 0
     });
@@ -440,20 +430,14 @@ const Purchases = {
     const item = this._editingItems[idx];
     if (!item) return;
 
-    if (field === 'cantidad' || field === 'precio' || field === 'precioDetal' || field === 'descuento' || field === 'margenGanancia') {
+    if (field === 'cantidad' || field === 'precio' || field === 'precioDetal') {
       item[field] = parseFloat(value) || 0;
     } else {
       item[field] = value;
     }
 
-    if (field === 'precio' || field === 'margenGanancia') {
-      const margen = item.margenGanancia || 0;
-      item.precioDetal = margen > 0 ? item.precio * (1 + margen / 100) : item.precioDetal;
-    }
-
     const lineTotal = item.precio * item.cantidad;
-    const descLinea = lineTotal * ((item.descuento || 0) / 100);
-    item.totalLinea = lineTotal - descLinea;
+    item.totalLinea = lineTotal;
 
     this.renderDetailRows();
     this.recalcAll();
@@ -479,8 +463,6 @@ const Purchases = {
       item.categoriaId = found.categoriaId || '';
       item.iva = found.iva || '16';
       item.precioDetal = found.precioDetal || 0;
-      item.precioMayor = found.precioMayor || 0;
-      if (found.margenGanancia) item.margenGanancia = found.margenGanancia;
       if (found.costoCompra && !item.precio) item.precio = found.costoCompra;
       UI.showToast(`Producto encontrado: ${found.descripcion}`, 'success');
       this.renderDetailRows();
@@ -490,22 +472,12 @@ const Purchases = {
     }
   },
 
-  recalcItemVenta(idx) {
-    const item = this._editingItems[idx];
-    if (!item) return;
-    const margen = item.margenGanancia || 0;
-    item.precioDetal = margen > 0 ? item.precio * (1 + margen / 100) : item.precioDetal;
-    this.renderDetailRows();
-    this.recalcAll();
-  },
-
   renderDetailRows() {
     const tbody = document.getElementById('purchaseDetailBody');
     if (!tbody) return;
 
     let html = '';
     this._editingItems.forEach((item, idx) => {
-      const precioVenta = item.precioDetal || (item.margenGanancia > 0 ? item.precio * (1 + item.margenGanancia / 100) : item.precio);
       html += `
         <tr>
           <td class="input-cell">
@@ -526,20 +498,9 @@ const Purchases = {
               onchange="Purchases.updateItemField(${idx}, 'precio', this.value)">
           </td>
           <td class="input-cell">
-            <select onchange="Purchases.updateItemField(${idx}, 'margenGanancia', this.value)">
-              <option value="0" ${!item.margenGanancia ? 'selected' : ''}>Sin ganancia</option>
-              <option value="10" ${item.margenGanancia == 10 ? 'selected' : ''}>10%</option>
-              <option value="30" ${item.margenGanancia == 30 ? 'selected' : ''}>30%</option>
-              <option value="40" ${item.margenGanancia == 40 ? 'selected' : ''}>40%</option>
-              <option value="60" ${item.margenGanancia == 60 ? 'selected' : ''}>60%</option>
-              <option value="custom" ${![0,10,30,40,60].includes(item.margenGanancia) ? 'selected' : ''}>Otro...</option>
-            </select>
-            ${![0,10,30,40,60].includes(item.margenGanancia) ? `<input type="number" value="${item.margenGanancia}" step="1" min="0" max="500" style="width:60px;margin-top:4px" onchange="Purchases.updateItemField(${idx}, 'margenGanancia', this.value)">` : ''}
-          </td>
-          <td class="text-right font-bold" style="padding:8px;color:var(--success)">${Utils.formatCurrency(precioVenta)}</td>
-          <td class="input-cell">
-            <input type="number" value="${item.descuento || 0}" step="0.1" min="0" max="100"
-              onchange="Purchases.updateItemField(${idx}, 'descuento', this.value)">
+            <input type="number" value="${item.precioDetal}" step="0.01" min="0"
+              style="font-weight:600;color:var(--success)"
+              onchange="Purchases.updateItemField(${idx}, 'precioDetal', this.value)">
           </td>
           <td class="input-cell">
             <select onchange="Purchases.updateItemField(${idx}, 'iva', this.value)">
@@ -556,7 +517,7 @@ const Purchases = {
     });
 
     if (this._editingItems.length === 0) {
-      html = '<tr><td colspan="10" class="text-center text-muted" style="padding:24px">Haz clic en "+ Agregar" para añadir productos a la compra</td></tr>';
+      html = '<tr><td colspan="8" class="text-center text-muted" style="padding:24px">Haz clic en "+ Agregar" para añadir productos a la compra</td></tr>';
     }
 
     tbody.innerHTML = html;
@@ -572,17 +533,14 @@ const Purchases = {
 
     this._editingItems.forEach(item => {
       const lineTotal = item.precio * item.cantidad;
-      const descLinea = lineTotal * ((item.descuento || 0) / 100);
-      item.totalLinea = lineTotal - descLinea;
+      item.totalLinea = lineTotal;
       subtotal += item.totalLinea;
 
       if (item.iva === '16') iva16 += item.totalLinea * iva16Rate;
       else if (item.iva === '10') iva10 += item.totalLinea * iva10Rate;
     });
 
-    const descGlobal = parseFloat(document.querySelector('[name="descuentoGlobal"]')?.value) || 0;
-    const descMonto = subtotal * (descGlobal / 100);
-    const baseImp = subtotal - descMonto;
+    const baseImp = subtotal;
     const totalIva = iva16 + iva10;
     const total = baseImp + totalIva;
 
@@ -593,7 +551,7 @@ const Purchases = {
 
     set('purchaseSubtotal', Utils.formatCurrency(subtotal));
     set('rSubtotal', Utils.formatCurrency(subtotal));
-    set('rDescuento', '-' + Utils.formatCurrency(descMonto));
+    set('rDescuento', '-$0.00');
     set('rBaseImp', Utils.formatCurrency(baseImp));
     set('rIva16', Utils.formatCurrency(iva16));
     set('rIva10', Utils.formatCurrency(iva10));
@@ -684,9 +642,7 @@ const Purchases = {
             <td>${item.codigo ? `<span style="font-family:monospace;color:var(--primary)">[${UI.escapeHtml(item.codigo)}]</span> ` : ''}${UI.escapeHtml(item.descripcion)}</td>
             <td class="text-center">${item.cantidad}</td>
             <td class="text-right">${Utils.formatCurrency(item.precio)}</td>
-            <td class="text-center">${item.margenGanancia || 0}%</td>
-            <td class="text-right">${Utils.formatCurrency(item.precioDetal || 0)}</td>
-            <td class="text-center">${item.descuento || 0}%</td>
+            <td class="text-right" style="color:var(--success)">${Utils.formatCurrency(item.precioDetal || 0)}</td>
             <td class="text-center">${item.iva}%</td>
             <td class="text-right font-bold">${Utils.formatCurrency(item.totalLinea)}</td>
           </tr>`;
@@ -718,11 +674,9 @@ const Purchases = {
           <thead>
             <tr>
               <th>Descripción</th>
-              <th class="text-center">Cant.</th>
+              <th class="text-center">Cant</th>
               <th class="text-right">P. Compra</th>
-              <th class="text-center">Ganancia</th>
               <th class="text-right">P. Venta</th>
-              <th class="text-center">Dto</th>
               <th class="text-center">IVA</th>
               <th class="text-right">Total</th>
             </tr>
@@ -799,7 +753,7 @@ const Purchases = {
         doc.text(Utils.formatCurrency(item.totalLinea), formatWidth - 5, y, { align: 'right' });
         y += 3;
         doc.setFontSize(6);
-        doc.text(`  $${item.precio} x ${item.cantidad} IVA:${item.iva}% Gan:${item.margenGanancia || 0}%`, 5, y);
+        doc.text(`  $${item.precio} x ${item.cantidad} IVA:${item.iva}% PV:$${item.precioDetal || 0}`, 5, y);
         doc.setFontSize(7);
         y += 4;
       });
