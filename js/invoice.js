@@ -105,15 +105,6 @@ const Invoice = {
       item.cantidad = parseFloat(value) || 1;
     } else if (field === 'precio') {
       item.precio = parseFloat(value) || 0;
-      if (item.costoCompra > 0) {
-        item.margenGanancia = item.precio > 0 ? Math.round(((item.precio - item.costoCompra) / item.costoCompra) * 100) : 0;
-      }
-    } else if (field === 'margenGanancia') {
-      const margen = Math.min(100, Math.max(0, parseFloat(value) || 0));
-      item.margenGanancia = margen;
-      if (item.costoCompra > 0) {
-        item.precio = parseFloat((item.costoCompra * (1 + margen / 100)).toFixed(2));
-      }
     }
 
     item.subtotal = item.precio * item.cantidad;
@@ -454,6 +445,7 @@ const Invoice = {
     inv.items.forEach((item, idx) => {
       const product = Inventory.getById(item.productoId);
       const codigo = product ? product.codigoBarras : '';
+      const gananciaCalc = item.costoCompra > 0 ? Math.round(((item.precio - item.costoCompra) / item.costoCompra) * 100) : 0;
       itemsHtml += `
         <tr>
           <td class="input-cell">
@@ -472,13 +464,8 @@ const Invoice = {
             <input type="number" value="${item.precio}" step="0.01" min="0"
               onchange="Invoice.updateItem(${idx}, 'precio', this.value); Invoice.renderFacturaEditor()">
           </td>
-          <td class="input-cell">
-            <div class="flex items-center gap-1">
-              <input type="number" value="${item.margenGanancia || 0}" step="1" min="0" max="100"
-                style="width:55px"
-                onchange="Invoice.updateItem(${idx}, 'margenGanancia', this.value); Invoice.renderFacturaEditor()">
-              <span style="font-size:11px;color:#94a3b8">%</span>
-            </div>
+          <td class="text-center" style="padding:10px">
+            <span style="font-size:12px;color:${gananciaCalc > 0 ? 'var(--success)' : '#94a3b8'}">${gananciaCalc}%</span>
             ${item.costoCompra > 0 ? `<div style="font-size:10px;color:#64748b">Costo: ${Utils.formatCurrency(item.costoCompra)}</div>` : ''}
           </td>
           <td class="input-cell">
@@ -520,7 +507,7 @@ const Invoice = {
                   <th>Descripción</th>
                   <th style="width:100px">Tipo Precio</th>
                   <th style="width:100px">Precio</th>
-                  <th style="width:90px">Ganancia %</th>
+                  <th style="width:90px">Ganancia</th>
                   <th style="width:80px">Cantidad</th>
                   <th class="text-right" style="width:100px">Total</th>
                   <th style="width:40px"></th>

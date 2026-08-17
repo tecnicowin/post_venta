@@ -8,7 +8,7 @@
     "build": "electron-packager . \"Instalar Punto de Venta\" --platform=win32 --arch=x64 --out=./build --overwrite --ignore=\"node_modules\" --ignore=\".git\" --asar"
   },
   "devDependencies": {
-    "electron": "^33.0.0",
-    "electron-packager": "^17.0.0"
+    "electron": "^33.4.11",
+    "electron-packager": "^17.1.2"
   }
 }
