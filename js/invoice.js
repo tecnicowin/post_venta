@@ -445,7 +445,6 @@ const Invoice = {
     inv.items.forEach((item, idx) => {
       const product = Inventory.getById(item.productoId);
       const codigo = product ? product.codigoBarras : '';
-      const gananciaCalc = item.costoCompra > 0 ? Math.round(((item.precio - item.costoCompra) / item.costoCompra) * 100) : 0;
       itemsHtml += `
         <tr>
           <td class="input-cell">
@@ -464,10 +463,6 @@ const Invoice = {
             <input type="number" value="${item.precio}" step="0.01" min="0"
               onchange="Invoice.updateItem(${idx}, 'precio', this.value); Invoice.renderFacturaEditor()">
           </td>
-          <td class="text-center" style="padding:10px">
-            <span style="font-size:12px;color:${gananciaCalc > 0 ? 'var(--success)' : '#94a3b8'}">${gananciaCalc}%</span>
-            ${item.costoCompra > 0 ? `<div style="font-size:10px;color:#64748b">Costo: ${Utils.formatCurrency(item.costoCompra)}</div>` : ''}
-          </td>
           <td class="input-cell">
             <input type="number" value="${item.cantidad}" min="1"
               onchange="Invoice.updateItem(${idx}, 'cantidad', this.value); Invoice.renderFacturaEditor()">
@@ -480,7 +475,7 @@ const Invoice = {
     });
 
     if (inv.items.length === 0) {
-      itemsHtml = `<tr><td colspan="8" class="text-center text-muted" style="padding:32px">
+      itemsHtml = `<tr><td colspan="7" class="text-center text-muted" style="padding:32px">
         Agrega productos usando el botón de abajo
       </td></tr>`;
     }
@@ -507,7 +502,6 @@ const Invoice = {
                   <th>Descripción</th>
                   <th style="width:100px">Tipo Precio</th>
                   <th style="width:100px">Precio</th>
-                  <th style="width:90px">Ganancia</th>
                   <th style="width:80px">Cantidad</th>
                   <th class="text-right" style="width:100px">Total</th>
                   <th style="width:40px"></th>
