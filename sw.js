@@ -1,4 +1,4 @@
-const CACHE_NAME = 'punto-de-venta-v5';
+const CACHE_NAME = 'punto-de-venta-v6';
 const ASSETS = [
   '/',
   '/index.html',
