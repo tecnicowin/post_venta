@@ -1103,19 +1103,28 @@ const Services = {
     UI.showModal('Seleccionar Cliente', content, {
       confirmText: 'Guardar',
       onConfirm: async () => {
-        const tab = document.querySelector('.tabs .tab-item.active');
-        const isPerso = tab && tab.textContent.includes('Personalizado');
-        if (isPerso) {
-          const data = UI.getFormData('svcClienteForm');
-          if (!data.nombre) { UI.showToast('Nombre requerido', 'error'); return; }
-          data.tipo = 'personalizado';
-          await this.addCliente(data);
-        } else {
-          await this.addCliente({ tipo: 'detal' });
+        try {
+          const tab = document.querySelector('.tabs .tab-item.active');
+          const isPerso = tab && tab.textContent.includes('Personalizado');
+          let displayName = 'Cliente Detal';
+
+          if (isPerso) {
+            const data = UI.getFormData('svcClienteForm');
+            if (!data.nombre) { UI.showToast('Nombre requerido', 'error'); return; }
+            data.tipo = 'personalizado';
+            await this.addCliente(data);
+            displayName = data.nombreComercial || `${data.nombre} ${data.apellido || ''}`;
+          } else {
+            await this.addCliente({ tipo: 'detal' });
+          }
+
+          UI.closeModal();
+          const nameEl = document.getElementById('serviceClienteName');
+          if (nameEl) nameEl.textContent = displayName;
+          UI.showToast('Cliente guardado', 'success');
+        } catch (e) {
+          UI.showToast('Error: ' + e.message, 'error');
         }
-        UI.closeModal();
-        const nameEl = document.getElementById('serviceClienteName');
-        if (nameEl) nameEl.textContent = isPerso ? (data.nombreComercial || `${data.nombre} ${data.apellido}`) : 'Cliente Detal';
       }
     });
   },
