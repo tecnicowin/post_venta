@@ -16,10 +16,15 @@ const Services = {
       categoriaServicio: '',
       descripcionServicio: '',
       descripcionDetallada: '',
+      accesorios: '',
+      condicionEquipo: '',
+      fallaReportada: '',
+      diagnosticoTecnico: '',
       equipo: {
         tipo: 'PC',
         marca: '',
         modelo: '',
+        serial: '',
         ram: '',
         procesador: '',
         tarjetaVideo: '',
@@ -28,6 +33,7 @@ const Services = {
         otrosDetalles: ''
       },
       items: [],
+      costoServicio: 0,
       subtotal: 0,
       descuento: 0,
       baseImponible: 0,
@@ -40,7 +46,8 @@ const Services = {
       estado: 'abierta',
       createdAt: Utils.getNow(),
       updatedAt: Utils.getNow(),
-      cerradaEn: ''
+      cerradaEn: '',
+      pagadaEn: ''
     };
   },
 
@@ -58,6 +65,7 @@ const Services = {
         direccion: clienteData.direccion || '',
         zona: clienteData.zona || '',
         telefono: clienteData.telefono || '',
+        email: clienteData.email || '',
         activo: true,
         createdAt: Utils.getNow()
       };
@@ -76,9 +84,7 @@ const Services = {
       productoId: product.id,
       descripcion: product.descripcion,
       precio: product.precioDetal,
-      descuento: 0,
       cantidad: 1,
-      subtotal: product.precioDetal,
       iva: product.iva || '16',
       totalPorRubro: product.precioDetal
     });
@@ -91,9 +97,7 @@ const Services = {
       productoId: '',
       descripcion: '',
       precio: 0,
-      descuento: 0,
       cantidad: 1,
-      subtotal: 0,
       iva: '16',
       totalPorRubro: 0
     });
@@ -103,13 +107,10 @@ const Services = {
     if (!this.currentService || !this.currentService.items[index]) return;
     const item = this.currentService.items[index];
     if (field === 'cantidad') item.cantidad = parseFloat(value) || 1;
-    else if (field === 'descuento') item.descuento = parseFloat(value) || 0;
     else if (field === 'precio') item.precio = parseFloat(value) || 0;
     else if (field === 'descripcion') item.descripcion = value;
     else if (field === 'iva') item.iva = value;
-    item.subtotal = item.precio * item.cantidad;
-    const descLinea = item.subtotal * (item.descuento / 100);
-    item.totalPorRubro = item.subtotal - descLinea;
+    item.totalPorRubro = item.precio * item.cantidad;
     this.recalculate();
   },
 
@@ -147,6 +148,7 @@ const Services = {
     this.currentService.estado = status;
     this.currentService.updatedAt = Utils.getNow();
     if (status === 'cerrada') this.currentService.cerradaEn = Utils.getNow();
+    if (status === 'pagada') this.currentService.pagadaEn = Utils.getNow();
     this.recalculate();
     await Storage.update(STORES.servicios, this.currentService);
     const saved = { ...this.currentService };
@@ -184,17 +186,20 @@ const Services = {
         return `<span class="badge badge-${colors[row.estado] || 'secondary'}">${row.estado}</span>`;
       }},
       { label: 'Fecha', render: (row) => Utils.formatDate(row.createdAt) },
-      { label: '', align: 'center', width: '140px', render: (row) => `
+      { label: '', align: 'center', width: '180px', render: (row) => `
         <div class="flex gap-1 justify-center">
           ${row.estado === 'abierta' ? `
             <button class="btn btn-ghost btn-sm" onclick="Services.editService('${row.id}')" title="Editar">✏️</button>
+            <button class="btn btn-ghost btn-sm" onclick="Services.closeService('${row.id}')" title="Cerrar Orden">🔒</button>
           ` : ''}
           <button class="btn btn-ghost btn-sm" onclick="Services.viewService('${row.id}')" title="Ver">👁️</button>
           ${row.estado === 'cerrada' ? `
             <button class="btn btn-ghost btn-sm" onclick="Services.showPaymentModal('${row.id}')" title="Cobrar">💰</button>
           ` : ''}
           ${row.estado === 'pagada' ? `
-            <button class="btn btn-ghost btn-sm" onclick="Services.printService('${row.id}')" title="Imprimir">📄</button>
+            <button class="btn btn-ghost btn-sm" onclick="Services.printRecepcion('${row.id}')" title="PDF Recepción">📄</button>
+            <button class="btn btn-ghost btn-sm" onclick="Services.printService('${row.id}')" title="Imprimir">🖨️</button>
+            <button class="btn btn-ghost btn-sm" onclick="Services.shareWhatsApp('${row.id}')" title="WhatsApp">📱</button>
           ` : ''}
           <button class="btn btn-ghost btn-sm" onclick="Services.confirmDelete('${row.id}')" title="Eliminar">🗑️</button>
         </div>`
@@ -238,7 +243,7 @@ const Services = {
     const content = `
       <form id="serviceForm">
         <div class="card mb-3">
-          <div class="card-header"><h3>Datos del Cliente</h3></div>
+          <div class="card-header"><h3>📋 Datos del Cliente</h3></div>
           <div class="card-body">
             <div class="flex items-center gap-3 mb-3">
               <strong>Cliente:</strong>
@@ -249,7 +254,7 @@ const Services = {
         </div>
 
         <div class="card mb-3">
-          <div class="card-header"><h3>Datos del Equipo</h3></div>
+          <div class="card-header"><h3>💻 Datos del Equipo</h3></div>
           <div class="card-body">
             <div class="form-row">
               <div class="form-group">
@@ -270,6 +275,12 @@ const Services = {
               <div class="form-group">
                 <label class="form-label">Modelo</label>
                 <input type="text" class="form-control" name="equipoModelo" value="${UI.escapeHtml(eq.modelo || '')}">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Serial / Número de Serie</label>
+                <input type="text" class="form-control" name="equipoSerial" value="${UI.escapeHtml(eq.serial || '')}" placeholder="Número de serie del equipo">
               </div>
             </div>
             <div id="pcFields" class="${eq.tipo === 'Celular' || eq.tipo === 'Tablet' ? 'hidden' : ''}">
@@ -304,35 +315,50 @@ const Services = {
                 </div>
               </div>
             </div>
+            <div class="form-group mt-2">
+              <label class="form-label">Accesorios Incluidos</label>
+              <input type="text" class="form-control" name="accesorios" value="${UI.escapeHtml(s.accesorios || '')}" placeholder="Cargador, mouse, cable, etc.">
+            </div>
+            <div class="form-group mt-2">
+              <label class="form-label">Condición del Equipo al Recibir</label>
+              <textarea class="form-control" name="condicionEquipo" rows="2" placeholder="Estado físico, rasguños, daños visibles...">${UI.escapeHtml(s.condicionEquipo || '')}</textarea>
+            </div>
           </div>
         </div>
 
         <div class="card mb-3">
-          <div class="card-header"><h3>Detalle del Servicio</h3></div>
+          <div class="card-header"><h3>🔧 Detalle del Servicio</h3></div>
           <div class="card-body">
             <div class="form-group">
-              <label class="form-label">Descripción del Servicio <span class="required">*</span></label>
+              <label class="form-label">Falla Reportada por el Cliente <span class="required">*</span></label>
+              <textarea class="form-control" name="fallaReportada" rows="2" placeholder="Describe la falla que reporta el cliente...">${UI.escapeHtml(s.fallaReportada || '')}</textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tipo de Servicio <span class="required">*</span></label>
               <input type="text" class="form-control" name="descripcionServicio" value="${UI.escapeHtml(s.descripcionServicio || '')}" placeholder="Ej: Formateo, Cambio de disco, Instalación de Windows..." required>
             </div>
             <div class="form-group">
-              <label class="form-label">Descripción Detallada</label>
-              <textarea class="form-control" name="descripcionDetallada" rows="3" placeholder="Detalles del servicio prestado, observaciones, fallas reportadas...">${UI.escapeHtml(s.descripcionDetallada || '')}</textarea>
+              <label class="form-label">Diagnóstico Técnico</label>
+              <textarea class="form-control" name="diagnosticoTecnico" rows="2" placeholder="Diagnóstico realizado por el técnico...">${UI.escapeHtml(s.diagnosticoTecnico || '')}</textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Observaciones / Detalles Adicionales</label>
+              <textarea class="form-control" name="descripcionDetallada" rows="2" placeholder="Detalles del servicio prestado, observaciones...">${UI.escapeHtml(s.descripcionDetallada || '')}</textarea>
             </div>
           </div>
         </div>
 
         <div class="card mb-3">
           <div class="card-header">
-            <h3>Materiales / Repuestos</h3>
+            <h3>🔩 Materiales / Repuestos</h3>
             <button type="button" class="btn btn-primary btn-sm" onclick="Services.addCustomItem(); Services.renderEditorItems();">+ Agregar</button>
           </div>
           <div class="card-body" style="padding:0">
             <table class="invoice-detail-table">
               <thead><tr>
                 <th style="min-width:200px">Descripción</th>
-                <th style="width:80px">Cant.</th>
+                <th style="width:70px">Cant.</th>
                 <th style="width:100px">Precio</th>
-                <th style="width:70px">Dto%</th>
                 <th style="width:70px">IVA</th>
                 <th style="width:100px">Total</th>
                 <th style="width:40px"></th>
@@ -362,7 +388,7 @@ const Services = {
                 <div class="row subtotal"><span>Descuento:</span><span id="sDescuento" class="text-danger">-$0.00</span></div>
                 <div class="row subtotal"><span>Base Imponible:</span><span id="sBaseImp">$0.00</span></div>
                 <div class="row subtotal"><span>IVA:</span><span id="sIva">$0.00</span></div>
-                <div class="row total"><span>TOTAL:</span><span id="sTotal">$0.00</span></div>
+                <div class="row total"><span>TOTAL A COBRAR:</span><span id="sTotal">$0.00</span></div>
               </div>
             </div>
           </div>
@@ -402,7 +428,6 @@ const Services = {
           <td class="input-cell"><input type="text" value="${UI.escapeHtml(item.descripcion)}" onchange="Services.updateItem(${idx}, 'descripcion', this.value)"></td>
           <td class="input-cell"><input type="number" value="${item.cantidad}" min="1" onchange="Services.updateItem(${idx}, 'cantidad', this.value)"></td>
           <td class="input-cell"><input type="number" value="${item.precio}" step="0.01" min="0" onchange="Services.updateItem(${idx}, 'precio', this.value)"></td>
-          <td class="input-cell"><input type="number" value="${item.descuento || 0}" step="0.1" min="0" max="100" onchange="Services.updateItem(${idx}, 'descuento', this.value)"></td>
           <td class="input-cell">
             <select onchange="Services.updateItem(${idx}, 'iva', this.value)">
               <option value="16" ${item.iva === '16' ? 'selected' : ''}>16%</option>
@@ -415,7 +440,7 @@ const Services = {
         </tr>`;
     });
     if (this.currentService.items.length === 0) {
-      html = '<tr><td colspan="7" class="text-center text-muted" style="padding:20px">Sin materiales. Agrega si es necesario.</td></tr>';
+      html = '<tr><td colspan="6" class="text-center text-muted" style="padding:20px">Sin materiales. Agrega si es necesario.</td></tr>';
     }
     tbody.innerHTML = html;
   },
@@ -427,12 +452,10 @@ const Services = {
     let matSubtotal = 0, iva16 = 0, iva10 = 0;
     this.currentService.items.forEach(item => {
       const lt = item.precio * item.cantidad;
-      const desc = lt * ((item.descuento || 0) / 100);
-      item.totalLinea = lt - desc;
-      item.totalPorRubro = item.totalLinea;
-      matSubtotal += item.totalLinea;
-      if (item.iva === '16') iva16 += item.totalLinea * iva16Rate;
-      else if (item.iva === '10') iva10 += item.totalLinea * iva10Rate;
+      item.totalPorRubro = lt;
+      matSubtotal += lt;
+      if (item.iva === '16') iva16 += lt * iva16Rate;
+      else if (item.iva === '10') iva10 += lt * iva10Rate;
     });
 
     const costoServ = parseFloat(document.querySelector('[name="costoServicio"]')?.value) || 0;
@@ -459,17 +482,22 @@ const Services = {
   async saveService(editId) {
     if (!this.currentService) return;
     if (!this.currentService.descripcionServicio) {
-      UI.showToast('Ingresa la descripción del servicio', 'error');
+      UI.showToast('Ingresa el tipo de servicio', 'error');
       return;
     }
     const form = document.getElementById('serviceForm');
     if (form) {
       this.currentService.descripcionServicio = form.querySelector('[name="descripcionServicio"]').value;
       this.currentService.descripcionDetallada = form.querySelector('[name="descripcionDetallada"]').value;
+      this.currentService.fallaReportada = form.querySelector('[name="fallaReportada"]').value;
+      this.currentService.diagnosticoTecnico = form.querySelector('[name="diagnosticoTecnico"]').value;
+      this.currentService.accesorios = form.querySelector('[name="accesorios"]').value;
+      this.currentService.condicionEquipo = form.querySelector('[name="condicionEquipo"]').value;
       this.currentService.equipo = {
         tipo: form.querySelector('[name="equipoTipo"]').value,
         marca: form.querySelector('[name="equipoMarca"]').value,
         modelo: form.querySelector('[name="equipoModelo"]').value,
+        serial: form.querySelector('[name="equipoSerial"]')?.value || '',
         ram: form.querySelector('[name="equipoRam"]')?.value || '',
         procesador: form.querySelector('[name="equipoProcesador"]')?.value || '',
         tarjetaVideo: form.querySelector('[name="equipoVideo"]')?.value || '',
@@ -533,6 +561,10 @@ const Services = {
     this.currentService = { ...svc, items: [...(svc.items || [])], equipo: { ...(svc.equipo || {}) } };
     this.recalculate();
 
+    const eq = svc.equipo || {};
+    const cliente = svc.cliente || { tipo: 'detal', nombre: 'Cliente Detal' };
+    const clienteNombre = cliente.tipo === 'personalizado' ? (cliente.nombreComercial || `${cliente.nombre} ${cliente.apellido}`) : 'Cliente Detal';
+
     const fpLabels = { transferencia: 'Transferencia', pagomovil: 'Pago Móvil', puntodeventa: 'Punto Venta', efectivo: 'Efectivo $', binance: 'Binance', paypal: 'PayPal', airtm: 'Airtm' };
     let methodsHtml = '';
     Object.entries(fpLabels).forEach(([key, label]) => {
@@ -540,12 +572,29 @@ const Services = {
     });
 
     const content = `
-      <div class="invoice-summary mb-4">
-        <div class="row"><span>Equipo:</span><span>${svc.equipo?.tipo || 'PC'} ${svc.equipo?.marca || ''} ${svc.equipo?.modelo || ''}</span></div>
-        <div class="row"><span>Servicio:</span><span>${UI.escapeHtml(svc.descripcionServicio || '')}</span></div>
-        <div class="row total"><span>Total a Cobrar:</span><span>${Utils.formatCurrency(this.currentService.total)}</span></div>
+      <div class="mb-4">
+        <div style="padding:12px;background:#f1f5f9;border-radius:8px;border-left:4px solid var(--primary)">
+          <div class="grid grid-2" style="font-size:13px">
+            <div>
+              <div><strong>Orden:</strong> #${svc.numero}</div>
+              <div><strong>Cliente:</strong> ${UI.escapeHtml(clienteNombre)}</div>
+              <div><strong>Equipo:</strong> ${eq.tipo || 'PC'} ${eq.marca || ''} ${eq.modelo || ''}</div>
+            </div>
+            <div>
+              <div><strong>Servicio:</strong> ${UI.escapeHtml(svc.descripcionServicio || '')}</div>
+              <div><strong>Fecha:</strong> ${Utils.formatDate(svc.createdAt)}</div>
+            </div>
+          </div>
+        </div>
       </div>
-      <h4 class="mb-3">Forma de Pago</h4>
+
+      <div class="text-center mb-4" style="padding:16px;background:linear-gradient(135deg,#10b981,#059669);border-radius:12px;color:white">
+        <div style="font-size:13px;opacity:0.9">MONTO A COBRAR</div>
+        <div style="font-size:32px;font-weight:800;margin:4px 0">${Utils.formatCurrency(this.currentService.total)}</div>
+        <div id="spm-change" style="font-size:12px;opacity:0.8"></div>
+      </div>
+
+      <h4 class="mb-3">💰 Forma de Pago</h4>
       <div class="payment-methods mb-3">${methodsHtml}</div>
       <div id="servicePaymentForms"></div>
     `;
@@ -574,7 +623,7 @@ const Services = {
     const container = document.getElementById('servicePaymentForms');
     if (!container) return;
     let html = '';
-    this._payMethods.forEach((method, idx) => {
+    this._payMethods.forEach((method) => {
       html += `
         <div class="card mb-2" style="border-left:3px solid var(--primary)">
           <div class="card-body" style="padding:12px">
@@ -605,7 +654,13 @@ const Services = {
     });
     const diff = total - (this.currentService?.total || 0);
     const el = document.getElementById('spm-change');
-    if (el) el.textContent = diff >= 0 ? `Cambio: ${Utils.formatCurrency(diff)}` : `Falta: ${Utils.formatCurrency(Math.abs(diff))}`;
+    if (el) {
+      if (diff >= 0) {
+        el.innerHTML = `<span style="color:#d1fae5">✓ Pago completo${diff > 0 ? ` | Cambio: ${Utils.formatCurrency(diff)}` : ''}</span>`;
+      } else {
+        el.innerHTML = `<span style="color:#fecaca">⚠ Falta: ${Utils.formatCurrency(Math.abs(diff))}</span>`;
+      }
+    }
   },
 
   async processServicePayment(id) {
@@ -653,10 +708,19 @@ const Services = {
     let itemsHtml = '';
     if (svc.items && svc.items.length > 0) {
       svc.items.forEach(item => {
-        itemsHtml += `<tr><td>${UI.escapeHtml(item.descripcion)}</td><td class="text-center">${item.cantidad}</td><td class="text-right">${Utils.formatCurrency(item.precio)}</td><td class="text-center">${item.descuento || 0}%</td><td class="text-right font-bold">${Utils.formatCurrency(item.totalPorRubro)}</td></tr>`;
+        itemsHtml += `<tr><td>${UI.escapeHtml(item.descripcion)}</td><td class="text-center">${item.cantidad}</td><td class="text-right">${Utils.formatCurrency(item.precio)}</td><td class="text-right font-bold">${Utils.formatCurrency(item.totalPorRubro)}</td></tr>`;
       });
     } else {
-      itemsHtml = '<tr><td colspan="5" class="text-center text-muted">Sin materiales</td></tr>';
+      itemsHtml = '<tr><td colspan="4" class="text-center text-muted">Sin materiales</td></tr>';
+    }
+
+    let pagosHtml = '';
+    if (svc.pagos && svc.pagos.length > 0) {
+      pagosHtml = '<div style="margin-top:12px;padding:10px;background:#f0fdf4;border-radius:6px;border-left:4px solid var(--success)"><strong>💰 Pagos:</strong><br>';
+      svc.pagos.forEach(p => {
+        pagosHtml += `<div style="font-size:12px">${p.formaPago}: ${Utils.formatCurrency(p.monto)}${p.banco ? ` (${p.banco})` : ''}${p.referencia ? ` Ref: ${p.referencia}` : ''}</div>`;
+      });
+      pagosHtml += '</div>';
     }
 
     const content = `
@@ -667,6 +731,7 @@ const Services = {
             <div>
               <div><strong>Cliente:</strong> ${UI.escapeHtml(clienteNombre)}</div>
               <div><strong>RIF/C.I.:</strong> ${UI.escapeHtml(cliente.rif || cliente.cedula || 'N/A')}</div>
+              ${cliente.telefono ? `<div><strong>Tel:</strong> ${UI.escapeHtml(cliente.telefono)}</div>` : ''}
             </div>
             <div>
               <div><strong>Fecha:</strong> ${Utils.formatDate(svc.createdAt)}</div>
@@ -674,34 +739,45 @@ const Services = {
             </div>
           </div>
         </div>
+
         <div style="padding:10px;background:#fffbeb;border-radius:6px;margin-bottom:12px;border-left:4px solid var(--warning)">
-          <h4 style="margin:0 0 6px">Equipo: ${eq.tipo || 'PC'}</h4>
+          <h4 style="margin:0 0 6px">💻 Equipo: ${eq.tipo || 'PC'}</h4>
           <div class="grid grid-3" style="font-size:12px">
             <div><strong>Marca:</strong> ${UI.escapeHtml(eq.marca || '-')}</div>
             <div><strong>Modelo:</strong> ${UI.escapeHtml(eq.modelo || '-')}</div>
+            ${eq.serial ? `<div><strong>Serial:</strong> ${UI.escapeHtml(eq.serial)}</div>` : ''}
             ${eq.ram ? `<div><strong>RAM:</strong> ${UI.escapeHtml(eq.ram)}</div>` : ''}
             ${eq.procesador ? `<div><strong>Procesador:</strong> ${UI.escapeHtml(eq.procesador)}</div>` : ''}
             ${eq.tarjetaVideo ? `<div><strong>Video:</strong> ${UI.escapeHtml(eq.tarjetaVideo)}</div>` : ''}
-            ${eq.tarjetasPCI ? `<div><strong>PCI:</strong> ${UI.escapeHtml(eq.tarjetasPCI)}</div>` : ''}
             ${eq.discoDuro ? `<div><strong>Disco:</strong> ${UI.escapeHtml(eq.discoDuro)}</div>` : ''}
             ${eq.otrosDetalles ? `<div><strong>Otros:</strong> ${UI.escapeHtml(eq.otrosDetalles)}</div>` : ''}
           </div>
+          ${svc.accesorios ? `<div style="margin-top:6px;font-size:12px"><strong>Accesorios:</strong> ${UI.escapeHtml(svc.accesorios)}</div>` : ''}
+          ${svc.condicionEquipo ? `<div style="margin-top:6px;font-size:12px"><strong>Condición:</strong> ${UI.escapeHtml(svc.condicionEquipo)}</div>` : ''}
         </div>
-        <div style="margin-bottom:12px"><strong>Servicio:</strong> ${UI.escapeHtml(svc.descripcionServicio || '')}</div>
-        ${svc.descripcionDetallada ? `<div style="margin-bottom:12px"><strong>Detalle:</strong><br>${UI.escapeHtml(svc.descripcionDetallada).replace(/\n/g, '<br>')}</div>` : ''}
+
+        ${svc.fallaReportada ? `<div style="margin-bottom:12px"><strong>⚠️ Falla Reportada:</strong><br>${UI.escapeHtml(svc.fallaReportada).replace(/\n/g, '<br>')}</div>` : ''}
+        <div style="margin-bottom:12px"><strong>🔧 Servicio:</strong> ${UI.escapeHtml(svc.descripcionServicio || '')}</div>
+        ${svc.diagnosticoTecnico ? `<div style="margin-bottom:12px"><strong>🔍 Diagnóstico:</strong><br>${UI.escapeHtml(svc.diagnosticoTecnico).replace(/\n/g, '<br>')}</div>` : ''}
+        ${svc.descripcionDetallada ? `<div style="margin-bottom:12px"><strong>📝 Observaciones:</strong><br>${UI.escapeHtml(svc.descripcionDetallada).replace(/\n/g, '<br>')}</div>` : ''}
+
         <table class="table mb-3">
-          <thead><tr><th>Material/Repuesto</th><th class="text-center">Cant.</th><th class="text-right">Precio</th><th class="text-center">Dto</th><th class="text-right">Total</th></tr></thead>
+          <thead><tr><th>Material/Repuesto</th><th class="text-center">Cant.</th><th class="text-right">Precio</th><th class="text-right">Total</th></tr></thead>
           <tbody>${itemsHtml}</tbody>
         </table>
+
         <div class="invoice-summary">
-          <div class="row subtotal"><span>Materiales:</span><span>${Utils.formatCurrency(svc.subtotal - (svc.costoServicio || 0))}</span></div>
+          <div class="row subtotal"><span>Materiales:</span><span>${Utils.formatCurrency((svc.subtotal || 0) - (svc.costoServicio || 0))}</span></div>
           <div class="row subtotal"><span>Servicio:</span><span>${Utils.formatCurrency(svc.costoServicio || 0)}</span></div>
           <div class="row subtotal"><span>Subtotal:</span><span>${Utils.formatCurrency(svc.subtotal)}</span></div>
           ${svc.descuento > 0 ? `<div class="row subtotal"><span>Descuento (${svc.descuento}%):</span><span class="text-danger">-${Utils.formatCurrency(svc.subtotal * svc.descuento / 100)}</span></div>` : ''}
           <div class="row subtotal"><span>Base Imponible:</span><span>${Utils.formatCurrency(svc.baseImponible)}</span></div>
           ${svc.iva16 > 0 ? `<div class="row subtotal"><span>IVA 16%:</span><span>${Utils.formatCurrency(svc.iva16)}</span></div>` : ''}
+          ${svc.iva10 > 0 ? `<div class="row subtotal"><span>IVA 10%:</span><span>${Utils.formatCurrency(svc.iva10)}</span></div>` : ''}
           <div class="row total"><span>TOTAL:</span><span>${Utils.formatCurrency(svc.total)}</span></div>
         </div>
+
+        ${pagosHtml}
       </div>
     `;
 
@@ -711,15 +787,211 @@ const Services = {
         <button class="btn btn-outline" onclick="UI.closeModal()">Cerrar</button>
         ${svc.estado === 'abierta' ? `<button class="btn btn-warning" onclick="UI.closeModal(); Services.closeService('${svc.id}')">🔒 Cerrar Orden</button>` : ''}
         ${svc.estado === 'cerrada' ? `<button class="btn btn-success" onclick="UI.closeModal(); Services.showPaymentModal('${svc.id}')">💰 Cobrar</button>` : ''}
-        ${svc.estado === 'pagada' ? `<button class="btn btn-info" onclick="UI.closeModal(); Services.printService('${svc.id}')">📄 Imprimir</button>` : ''}
+        ${svc.estado === 'pagada' ? `
+          <button class="btn btn-info" onclick="UI.closeModal(); Services.printRecepcion('${svc.id}')">📄 PDF Recepción</button>
+          <button class="btn btn-primary" onclick="UI.closeModal(); Services.printService('${svc.id}')">🖨️ Imprimir</button>
+          <button class="btn btn-success" onclick="UI.closeModal(); Services.shareWhatsApp('${svc.id}')">📱 WhatsApp</button>
+        ` : ''}
       `
     });
+  },
+
+  async printRecepcion(id) {
+    const svc = await Storage.get(STORES.servicios, id);
+    if (!svc) return;
+    if (typeof window.jspdf === 'undefined') { UI.showToast('PDF no disponible. Verifica tu conexión.', 'warning'); return; }
+
+    const { jsPDF } = window.jspdf;
+    const config = Config.data;
+    const doc = new jsPDF({ unit: 'mm', format: 'letter' });
+    const pageWidth = 215.9;
+    const margin = 15;
+    const width = pageWidth - 30;
+    let y = 15;
+
+    const centerText = (text, yPos, options = {}) => {
+      doc.setFontSize(options.fs || 8);
+      doc.setFont('helvetica', options.fw || 'normal');
+      doc.text(text, pageWidth / 2, yPos, { align: 'center', maxWidth: width });
+      return yPos + (options.lh || (options.fs || 8) * 0.4);
+    };
+
+    const leftText = (text, xPos, yPos, options = {}) => {
+      doc.setFontSize(options.fs || 8);
+      doc.setFont('helvetica', options.fw || 'normal');
+      doc.text(text, xPos, yPos);
+      return yPos + (options.lh || (options.fs || 8) * 0.4);
+    };
+
+    const eq = svc.equipo || {};
+    const cliente = svc.cliente || { tipo: 'detal', nombre: 'Cliente Detal' };
+    const clienteNombre = cliente.tipo === 'personalizado' ? (cliente.nombreComercial || `${cliente.nombre} ${cliente.apellido}`) : 'Cliente Detal';
+
+    doc.setDrawColor(0);
+
+    y = centerText(config.nombreComercial || 'MI NEGOCIO', y, { fs: 14, fw: 'bold', lh: 6 });
+    y = centerText(`RIF: ${config.rif || 'N/A'} | Tel: ${config.telefono || ''}`, y, { fs: 8, lh: 4 });
+    y = centerText(config.direccion || '', y, { fs: 7, lh: 4 });
+    y += 2;
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 5;
+
+    y = centerText('ORDEN DE RECEPCIÓN DE EQUIPO', y, { fs: 12, fw: 'bold', lh: 6 });
+    y = centerText(`Orden Nro: #${svc.numero}`, y, { fs: 9, lh: 5 });
+    y += 2;
+
+    doc.setFillColor(240, 245, 255);
+    doc.rect(margin, y - 3, width, 8, 'F');
+    y = leftText(`Fecha de Recepción: ${Utils.formatDateTime(svc.createdAt)}`, margin + 3, y + 2, { fs: 8 });
+    y += 3;
+
+    doc.setFillColor(245, 245, 245);
+    doc.rect(margin, y - 3, width, 12, 'F');
+    y = leftText(`Cliente: ${clienteNombre}`, margin + 3, y + 2, { fs: 8 });
+    y = leftText(`C.I./RIF: ${cliente.cedula || cliente.rif || 'N/A'}    Tel: ${cliente.telefono || 'N/A'}`, margin + 3, y + 1, { fs: 7 });
+    y += 4;
+
+    doc.setLineWidth(0.3);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 4;
+    y = leftText('DATOS DEL EQUIPO', margin, y, { fs: 9, fw: 'bold', lh: 5 });
+    y += 1;
+
+    const eqData = [
+      [`Tipo: ${eq.tipo || 'PC'}`, `Marca: ${eq.marca || '-'}`, `Modelo: ${eq.modelo || '-'}`],
+      [`Serial: ${eq.serial || '-'}`, `RAM: ${eq.ram || '-'}`, `CPU: ${eq.procesador || '-'}`],
+      [`Disco: ${eq.discoDuro || '-'}`, `Video: ${eq.tarjetaVideo || '-'}`, `Otros: ${eq.otrosDetalles || '-'}`]
+    ];
+    eqData.forEach(row => {
+      y = leftText(row.join('  |  '), margin + 3, y, { fs: 7, lh: 4 });
+    });
+
+    if (svc.accesorios) {
+      y = leftText(`Accesorios: ${svc.accesorios}`, margin + 3, y + 1, { fs: 7, lh: 4 });
+    }
+    if (svc.condicionEquipo) {
+      y += 2;
+      y = leftText('Condición del Equipo:', margin + 3, y, { fs: 7, fw: 'bold', lh: 4 });
+      y = leftText(svc.condicionEquipo, margin + 6, y, { fs: 7, lh: 4 });
+    }
+    y += 3;
+
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 4;
+    y = leftText('DESCRIPCIÓN DEL SERVICIO', margin, y, { fs: 9, fw: 'bold', lh: 5 });
+    y += 1;
+
+    if (svc.fallaReportada) {
+      y = leftText('Falla Reportada:', margin + 3, y, { fs: 7, fw: 'bold', lh: 4 });
+      const fallaLines = doc.splitTextToSize(svc.fallaReportada, width - 10);
+      doc.setFontSize(7); doc.setFont('helvetica', 'normal');
+      doc.text(fallaLines, margin + 6, y);
+      y += fallaLines.length * 3.5 + 2;
+    }
+
+    y = leftText(`Tipo de Servicio: ${svc.descripcionServicio || '-'}`, margin + 3, y, { fs: 7, lh: 4 });
+
+    if (svc.diagnosticoTecnico) {
+      y = leftText('Diagnóstico Técnico:', margin + 3, y + 1, { fs: 7, fw: 'bold', lh: 4 });
+      const diagLines = doc.splitTextToSize(svc.diagnosticoTecnico, width - 10);
+      doc.setFontSize(7); doc.setFont('helvetica', 'normal');
+      doc.text(diagLines, margin + 6, y);
+      y += diagLines.length * 3.5 + 2;
+    }
+    y += 3;
+
+    if (svc.items && svc.items.length > 0) {
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 4;
+      y = leftText('MATERIALES / REPUESTOS', margin, y, { fs: 9, fw: 'bold', lh: 5 });
+      y += 2;
+
+      const colX = [margin + 3, margin + 90, margin + 120, margin + 140, margin + 165];
+      doc.setFontSize(7); doc.setFont('helvetica', 'bold');
+      ['Descripción', 'Cant.', 'Precio', 'IVA', 'Total'].forEach((h, i) => {
+        doc.text(h, colX[i], y);
+      });
+      y += 3;
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 2;
+
+      doc.setFont('helvetica', 'normal');
+      svc.items.forEach(item => {
+        if (y > 240) { doc.addPage(); y = 15; }
+        doc.text(item.descripcion.substring(0, 40), colX[0], y);
+        doc.text(String(item.cantidad), colX[1], y);
+        doc.text(Utils.formatCurrency(item.precio), colX[2], y);
+        doc.text(`${item.iva}%`, colX[3], y);
+        doc.text(Utils.formatCurrency(item.totalPorRubro), colX[4], y);
+        y += 3.5;
+      });
+      y += 2;
+    }
+
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 4;
+    y = leftText('RESUMEN DE COBRO', margin, y, { fs: 9, fw: 'bold', lh: 5 });
+    y += 2;
+
+    const summaryX = margin + 3;
+    const summaryValX = pageWidth - margin - 3;
+    const printLine = (label, value, bold = false) => {
+      doc.setFontSize(8); doc.setFont('helvetica', bold ? 'bold' : 'normal');
+      doc.text(label, summaryX, y);
+      doc.text(value, summaryValX, y, { align: 'right' });
+      y += 4;
+    };
+
+    printLine('Materiales:', Utils.formatCurrency((svc.subtotal || 0) - (svc.costoServicio || 0)));
+    printLine('Costo Servicio:', Utils.formatCurrency(svc.costoServicio || 0));
+    printLine('Subtotal:', Utils.formatCurrency(svc.subtotal));
+    if (svc.descuento > 0) printLine(`Descuento (${svc.descuento}%):`, `-${Utils.formatCurrency(svc.subtotal * svc.descuento / 100)}`);
+    printLine('Base Imponible:', Utils.formatCurrency(svc.baseImponible));
+    if (svc.iva16 > 0) printLine('IVA 16%:', Utils.formatCurrency(svc.iva16));
+    if (svc.iva10 > 0) printLine('IVA 10%:', Utils.formatCurrency(svc.iva10));
+
+    doc.setFillColor(240, 240, 240);
+    doc.rect(margin, y - 3, width, 8, 'F');
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+    doc.text('TOTAL A COBRAR:', summaryX, y + 2);
+    doc.text(Utils.formatCurrency(svc.total), summaryValX, y + 2, { align: 'right' });
+    y += 10;
+
+    if (svc.pagos && svc.pagos.length > 0) {
+      y = leftText('Formas de Pago:', margin + 3, y, { fs: 8, fw: 'bold', lh: 4 });
+      svc.pagos.forEach(p => {
+        y = leftText(`  ${p.formaPago}: ${Utils.formatCurrency(p.monto)}${p.banco ? ` (${p.banco})` : ''}${p.referencia ? ` Ref: ${p.referencia}` : ''}`, margin + 3, y, { fs: 7, lh: 4 });
+      });
+      y += 3;
+    }
+
+    y += 5;
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 8;
+
+    const sigWidth = width / 2 - 10;
+    doc.setFontSize(7); doc.setFont('helvetica', 'normal');
+    doc.line(margin + 5, y, margin + 5 + sigWidth, y);
+    y += 3;
+    centerText('Firma del Cliente', y, { fs: 7 });
+
+    doc.line(pageWidth - margin - sigWidth - 5, y - 3, pageWidth - margin - 5, y - 3);
+    y = centerText('Firma del Técnico', y, { fs: 7 });
+
+    y += 8;
+    centerText('¡Gracias por su preferencia!', y, { fs: 7 });
+    y = centerText(config.nombreComercial || '', y + 1, { fs: 6 });
+
+    doc.save(`Recepcion_${svc.numero}_${(clienteNombre || 'Cliente').replace(/\s/g, '_')}.pdf`);
+    UI.showToast('PDF de recepción generado', 'success');
   },
 
   async printService(id) {
     const svc = await Storage.get(STORES.servicios, id);
     if (!svc) return;
-    if (typeof window.jspdf === 'undefined') { UI.showToast('PDF no disponible. Conexión requerida.', 'warning'); return; }
+    if (typeof window.jspdf === 'undefined') { UI.showToast('PDF no disponible. Verifica tu conexión.', 'warning'); return; }
+
     const { jsPDF } = window.jspdf;
     const config = Config.data;
     const paperSize = config.paperSize || '58mm';
@@ -741,6 +1013,7 @@ const Services = {
     doc.setFontSize(7); doc.setFont('helvetica', 'bold');
     doc.text(`EQUIPO: ${Utils.escapeHtml(eq.tipo || 'PC')} ${Utils.escapeHtml(eq.marca || '')} ${Utils.escapeHtml(eq.modelo || '')}`, 5, y); y += 3;
     doc.setFontSize(6); doc.setFont('helvetica', 'normal');
+    if (eq.serial) { doc.text(`Serial: ${Utils.escapeHtml(eq.serial)}`, 5, y); y += 3; }
     if (eq.ram) { doc.text(`RAM: ${Utils.escapeHtml(eq.ram)}`, 5, y); y += 3; }
     if (eq.procesador) { doc.text(`CPU: ${Utils.escapeHtml(eq.procesador)}`, 5, y); y += 3; }
     if (eq.discoDuro) { doc.text(`Disco: ${Utils.escapeHtml(eq.discoDuro)}`, 5, y); y += 3; }
@@ -763,6 +1036,33 @@ const Services = {
     doc.text('TOTAL:', 5, y); doc.text(Utils.formatCurrency(svc.total), formatWidth - 5, y, { align: 'right' });
     doc.save(`Servicio_${svc.numero}.pdf`);
     UI.showToast('PDF generado', 'success');
+  },
+
+  async shareWhatsApp(id) {
+    const svc = await Storage.get(STORES.servicios, id);
+    if (!svc) return;
+    const config = Config.data;
+    const cliente = svc.cliente || { tipo: 'detal', nombre: 'Cliente Detal' };
+    const clienteNombre = cliente.tipo === 'personalizado' ? (cliente.nombreComercial || `${cliente.nombre} ${cliente.apellido}`) : 'Cliente Detal';
+    const eq = svc.equipo || {};
+
+    let msg = `*${config.nombreComercial || 'MI NEGOCIO'}*\n`;
+    msg += `Orden de Servicio #${svc.numero}\n`;
+    msg += `Fecha: ${Utils.formatDate(svc.createdAt)}\n`;
+    msg += `Cliente: ${clienteNombre}\n`;
+    msg += `Equipo: ${eq.tipo || 'PC'} ${eq.marca || ''} ${eq.modelo || ''}\n`;
+    msg += `Servicio: ${svc.descripcionServicio || ''}\n`;
+    msg += `─────────────\n`;
+    msg += `*TOTAL: ${Utils.formatCurrency(svc.total)}*\n`;
+    msg += `Estado: ${svc.estado}\n`;
+
+    if (navigator.share) {
+      try { await navigator.share({ title: `Orden #${svc.numero}`, text: msg }); } catch (e) {}
+    } else {
+      const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+      window.open(url, '_blank');
+    }
+    UI.showToast('Compartiendo por WhatsApp', 'info');
   },
 
   confirmDelete(id) {
@@ -790,8 +1090,8 @@ const Services = {
             <div class="form-group"><label class="form-label">Apellido</label><input type="text" class="form-control" name="apellido"></div>
           </div>
           <div class="form-row">
-            <div class="form-group"><label class="form-label">Cédula</label><input type="text" class="form-control" name="cedula"></div>
-            <div class="form-group"><label class="form-label">RIF</label><input type="text" class="form-control" name="rif"></div>
+            <div class="form-group"><label class="form-label">Cédula</label><input type="text" class="form-control" name="cedula" placeholder="V-12345678"></div>
+            <div class="form-group"><label class="form-label">RIF</label><input type="text" class="form-control" name="rif" placeholder="J-12345678-9"></div>
           </div>
           <div class="form-row">
             <div class="form-group"><label class="form-label">Dirección</label><input type="text" class="form-control" name="direccion"></div>
